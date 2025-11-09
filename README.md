@@ -7,6 +7,8 @@
 
 ⭐ **Salarixi Onion** allows you to launch a specific number of bots on **Minecraft servers** and manage them in real time. The client is **very user-friendly** and **easy to use**, offering **great flexibility** and **functionality**.
 
+✨ The client gives you **full control** over bots, from chat messages to various cheating functions.
+
 📌 This client uses the [mineflayer](https://github.com/PrismarineJS/mineflayer) library as a base.
 
 ![](./images/main-page-screen.png)
@@ -68,5 +70,9 @@
 4. Go to the directory **./services**
 5. Run the file **so-utils.exe**
 6. Run the file **so-core.exe**
-
 7. Run the file **so-interface.exe**
+
+
+# Licence 
+
+MIT License - [LICENSE](./LICENSE)
