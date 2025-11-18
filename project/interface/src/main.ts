@@ -66,13 +66,10 @@ async function initializeGlobalContainers() {
   const copyTelegramLinkBtn = document.getElementById('btn-telegram') as HTMLButtonElement;
 
   copyGithubLinkBtn.addEventListener('click', () => {
-    logger.log('g', 'log-system');
-    navigator.clipboard.writeText('https://github.com/i0fliget');
-
+    navigator.clipboard.writeText('https://github.com/nullclyze');
   }); 
 
   copyTelegramLinkBtn.addEventListener('click', () => {
-    logger.log('t', 'log-system');
     navigator.clipboard.writeText('https://t.me/salarixionion');
   });
 
