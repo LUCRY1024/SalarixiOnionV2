@@ -5,11 +5,11 @@ import (
 	"os"
 )
 
-type Configurator struct {
+type ConfigManager struct {
 	path string
 }
 
-func (c Configurator) GetConfigPath() (bool, string) {
+func (c ConfigManager) GetConfigPath() (bool, string) {
 	status := false
 	path := "NOT_FOUND"
 
@@ -39,13 +39,13 @@ func (c Configurator) GetConfigPath() (bool, string) {
 	return status, path
 }
 
-func (c Configurator) checkConfigExist() bool {
+func (c ConfigManager) checkConfigExist() bool {
 	_, err := os.Stat(c.path)
 
 	return !os.IsNotExist(err)
 }
 
-func (c Configurator) WriteConfig(config any) (bool, string) {
+func (c ConfigManager) WriteConfig(config any) (bool, string) {
 	data, err := json.MarshalIndent(config, "", "  ")
 
 	if err != nil {
@@ -72,7 +72,7 @@ func (c Configurator) WriteConfig(config any) (bool, string) {
 	return true, "Конфиг успешно изменён"
 }
 
-func (c Configurator) ReadConfig() (bool, string, map[string]any) {
+func (c ConfigManager) ReadConfig() (bool, string, map[string]any) {
 	if c.path == "NOT_FOUND" || !c.checkConfigExist() {
 		status, path := c.GetConfigPath()
 

@@ -1,12 +1,10 @@
 let statistics = {
   isInitialized: false,
   logIndex: 0,
+  showSystemLogs: true,
   latestConfig: {},
   nicknamesList: []
 };
-
-let chatMsgIndex = {};
-let chatHistoryFilters = {};
 
 let activity = {
   botting: false,
@@ -61,7 +59,7 @@ function log(text, type) {
 
   if (!logContent) return;
 
-  if (statistics.logIndex >= 300) {
+  if (statistics.logIndex >= 500) {
     statistics.logIndex = 0;
     logContent.innerHTML = '';
   }
@@ -83,18 +81,15 @@ function log(text, type) {
     .replace(/%sc/g, '</span>');
 
   container.innerHTML = `
-    <div class="log-line-number">${statistics.logIndex}</div>
-    <div class="log-line-content ${type}"><span class="log-timestamp">(${date()})</span> ${text}</div>
+    <div class="log-line-date">${date()}</div>
+    <div class="log-line-content ${type}">${text}</div>
   `;
 
-  logContent.appendChild(container);
-
-  if (statistics.logIndex > 20) {
-    logContent.scrollTo({
-      top: logContent.scrollHeight,
-      behavior: 'smooth'
-    });
+  if (!statistics.showSystemLogs) {
+    container.style.display = 'none';
   }
+
+  logContent.appendChild(container);
 }
 
 async function sendDataTo(options, data) {
@@ -212,14 +207,13 @@ class Functions {
             const useOptimization = (document.getElementById('use-optimization')).checked;
             const useErrorCorrector = (document.getElementById('use-error-corrector')).checked;
 
-            const monitoringStatusText = document.getElementById('monitoring-status-text');
-            const monitoringBotsCardsContainer = document.getElementById('bots-cards-container');
-
             log(`Запуск ботов на сервер...`, 'log-info');
 
             if (activity.botting) {
               log('Запуск невозможен, есть активные боты', 'log-warning'); return;
             }
+
+            monitoring.maxChatHistoryLength = chatHistoryLength;
         
             const response = await fetch(`${localhost}/botting/start`, {
               method: 'POST',
@@ -245,7 +239,6 @@ class Functions {
                 loginMinDelay: loginMinDelay || 2000,
                 loginMaxDelay: loginMaxDelay || 3000,
                 dataUpdateFrequency: dataUpdateFrequency,
-                chatHistoryLength: chatHistoryLength,
                 proxyList: proxyList,
                 useKeepAlive: useKeepAlive,
                 usePhysics: usePhysics,
@@ -269,10 +262,7 @@ class Functions {
 
             activity.botting = true;
 
-            monitoringStatusText.innerText = 'Ожидание активных ботов...';
-            monitoringStatusText.style.color = '#646464f7';
-            monitoringBotsCardsContainer.innerHTML = '';
-            monitoringBotsCardsContainer.style.display = 'grid';
+            await monitoring.wait();
 
             const eventSource = new EventSource(`${localhost}/session/botting`);
 
@@ -301,9 +291,6 @@ class Functions {
 
         stopBotsProcessBtn.addEventListener('click', async () => {
           try {
-            const monitoringStatusText = document.getElementById('monitoring-status-text');
-            const monitoringBotsCardsContainer = document.getElementById('bots-cards-container');
-            
             log('Остановка ботов...', 'log-info');
 
             const response = await fetch(`${localhost}/botting/stop`, {
@@ -315,17 +302,11 @@ class Functions {
               log('Ошибка сервера, перезапустите клиент', 'log-error'); return;
             }
 
-            await clearMonitoringData();
+            await monitoring.clear();
 
             statistics.nicknamesList = []; 
 
             activity.botting = false;
-
-            monitoringStatusText.innerText = 'Объекты ботов отсутствуют';
-            monitoringStatusText.style.color = '#646464f7';
-            monitoringBotsCardsContainer.innerHTML = '';
-            monitoringBotsCardsContainer.style.display = 'none';
-            monitoringStatusText.style.display = 'block';
 
             const data = await response.json();
 
@@ -951,6 +932,7 @@ class Functions {
               const useAntiKick = document.getElementById('use-flight-anti-kick').checked;
               const useSpoofing = document.getElementById('use-flight-spoofing').checked;
               const useHighPower = document.getElementById('use-flight-high-power').checked;
+              const useHovering = document.getElementById('use-flight-hovering').checked;
 
               const response = await fetch(`${localhost}/control/flight`, {
                 method: 'POST',
@@ -961,7 +943,8 @@ class Functions {
                     state: 'start',
                     useAntiKick: useAntiKick,
                     useSpoofing: useSpoofing,
-                    useHighPower: useHighPower
+                    useHighPower: useHighPower,
+                    useHovering: useHovering
                   }
                 })
               });
@@ -1262,17 +1245,19 @@ class Functions {
         try {
           const showSystemLogChbx = document.getElementById('show-system-log');
 
-          showSystemLogChbx.addEventListener('change', async () => {
+          showSystemLogChbx.addEventListener('change', () => {
             const systemLogs = document.querySelectorAll('.log-line-system');
 
             if (showSystemLogChbx.checked) {
+              statistics.showSystemLogs = true;
               systemLogs.forEach(element => {
                 element.style.display = 'flex';
-              })
+              });
             } else {
+              statistics.showSystemLogs = false;
               systemLogs.forEach(element => {
                 element.style.display = 'none';
-              })
+              });
             }
           });
         } catch (error) {
@@ -1538,45 +1523,418 @@ class GraphicManager {
   }
 }
 
+class MonitoringManager {
+  statusText = null;
+  botCardsContainer = null;
+
+  maxChatHistoryLength = null;
+  chatMessageCounter = {};
+  chatHistoryFilters = {};
+
+  async init() {
+    this.statusText = document.getElementById('monitoring-status-text');
+    this.botCardsContainer = document.getElementById('bot-cards-container');
+
+    this.statusText.innerText = 'Объекты ботов отсутствуют';
+    this.statusText.style.color = '#646464f7';
+    this.statusText.style.display = 'block';
+  }
+
+  async wait() {
+    this.statusText.innerText = 'Ожидание активных ботов...';
+    this.statusText.style.color = '#646464f7';
+
+    this.botCardsContainer.innerHTML = '';
+    this.botCardsContainer.style.display = 'grid';
+  }
+
+  async clear() {
+    const cards = document.querySelectorAll('#bot-card');
+
+    this.chatMessageCounter = {};
+    this.chatHistoryFilters = {};
+
+    cards.forEach(card => card.remove());
+
+    this.statusText.innerText = 'Объекты ботов отсутствуют';
+    this.statusText.style.color = '#646464f7';
+    this.statusText.style.display = 'block';
+
+    this.botCardsContainer.innerHTML = '';
+    this.botCardsContainer.style.display = 'none';
+  }
+
+  initializeBotCard(nickname) {
+    const openChatBtn = document.getElementById(`open-chat-${nickname}`);
+    const recreateBotBtn = document.getElementById(`recreate-${nickname}`);
+
+    const filterChatBtn = document.getElementById(`filter-chat-${nickname}`);
+    const clearChatBtn = document.getElementById(`clear-chat-${nickname}`);
+    const closeChatBtn = document.getElementById(`close-chat-${nickname}`);
+
+    openChatBtn.addEventListener('click', () => {
+      const chat = document.getElementById(`chat-${nickname}`);
+      chat.style.display = 'flex';
+    });
+
+    recreateBotBtn.addEventListener('click', async () => {
+      try {
+        const operation = await sendDataTo({ url: `${localhost}/advanced/recreate`, method: 'POST', useHeaders: true }, { 
+          nickname: nickname
+        });
+
+        log(operation.answer.data.message, `log-${operation.answer.type}`);
+      } catch (error) {
+        log(`Ошибка пересоздания бота ${nickname}: ${error}`, 'log-error');
+      }
+    });
+
+    filterChatBtn.addEventListener('click', () => {
+      try {
+        const chat = document.getElementById(`monitoring-chat-content-${nickname}`);
+        const type = document.getElementById(`select-chat-filter-${nickname}`);
+
+        const messages = document.querySelectorAll(`#monitoring-message-${nickname}`);
+
+        switch (type.value) {
+          case 'all':
+            chat.innerHTML = '';
+
+            this.chatHistoryFilters[nickname] = 'all';
+
+            messages.forEach(msg => chat.appendChild(msg)); break;
+          case 'bans':
+            chat.innerHTML = '';
+
+            this.chatHistoryFilters[nickname] = 'bans';
+
+            messages.forEach(async msg => {
+              if (this.filterMessage('bans', msg.textContent)) {
+                chat.appendChild(msg);
+              }
+            }); break;
+          case 'mentions':
+            chat.innerHTML = '';
+
+            this.chatHistoryFilters[nickname] = 'mentions';
+
+            messages.forEach(async msg => {
+              if (this.filterMessage('mentions', msg.textContent)) {
+                chat.appendChild(msg);
+              }
+            }); break;
+          case 'links':
+            chat.innerHTML = '';
+
+            this.chatHistoryFilters[nickname] = 'links';
+
+            messages.forEach(async msg => {
+              if (this.filterMessage('links', msg.textContent)) {
+                chat.appendChild(msg);
+              }
+            }); break;
+        }
+      } catch (error) {
+        log(`Ошибка фильтровки чата: ${error}`, 'log-error');
+      }
+    });
+
+    clearChatBtn.addEventListener('click', () => {
+      const messages = document.querySelectorAll(`#monitoring-message-${nickname}`);
+      messages.forEach(msg => msg.remove());
+      this.chatMessageCounter[nickname] = 0;
+    });
+
+    closeChatBtn.addEventListener('click', () => {
+      const chat = document.getElementById(`chat-${nickname}`);
+      chat.style.display = 'none';
+    });
+  }
+
+  async profileDataMonitoring() {
+    try {
+      const steveIconPath = document.getElementById('steve-img');
+
+      const eventSource = new EventSource(`${localhost}/session/monitoring/profile-data`);
+
+      eventSource.onmessage = async (event) => {
+        try {
+          if (!activity.botting) return;
+
+          const data = JSON.parse(event.data);
+
+          const { 
+            nickname, status, statusColor, 
+            version, password, proxyType, 
+            proxy, load, loadColor, 
+            ping, pingColor
+          } = data;
+
+          if (statistics.nicknamesList.length === 0) {
+            this.statusText.style.display = 'none';
+          }
+
+          if (statistics.nicknamesList.includes(nickname)) {
+            document.getElementById(`bot-status-${nickname}`).innerHTML = `<span style="color: ${statusColor};">• ${status}</span>`;
+            document.getElementById(`bot-version-${nickname}`).innerHTML = `  ${version}`;
+            document.getElementById(`bot-password-${nickname}`).innerHTML = `  ${password}`;
+            document.getElementById(`bot-proxy-${nickname}`).innerHTML = `  ${proxy}`;
+            document.getElementById(`bot-proxy-type-${nickname}`).innerHTML = `  ${proxyType}`;
+            document.getElementById(`bot-load-${nickname}`).innerHTML = `<span style="color: ${loadColor};">  ${load}</span>`;
+            document.getElementById(`bot-ping-${nickname}`).innerHTML = `<span style="color: ${pingColor};">  ${ping}</span>`;
+          } else {
+            const card = document.createElement('div');
+            card.className = 'bot-card';
+
+            card.innerHTML = `
+              <div class="bot-card-head">
+                <img src="${steveIconPath.src}" class="image" draggable="false">
+                <div class="text">
+                  <div class="bot-basic-info">
+                    <div class="bot-nickname" style="user-select: text; -moz-user-select: text;">${nickname}</div>
+                    <div class="bot-status"><span id="bot-status-${nickname}" style="color: ${statusColor};">• ${status}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bot-advanced-info">
+                <p>Версия:<span id="bot-version-${nickname}">  ${version}</span></p>
+                <p>Пароль:<span id="bot-password-${nickname}">  ${password}</span></p>
+                <p>Прокси:<span id="bot-proxy-${nickname}">  ${proxy}</span></p>
+                <p>Тип прокси:<span id="bot-proxy-type-${nickname}">  ${proxyType}</span></p>
+                <p>Нагрузка:<span id="bot-load-${nickname}"><span style="color: ${loadColor};">  ${load}</span></span></p>
+                <p>Пинг:<span id="bot-ping-${nickname}"><span style="color: ${pingColor};">  ${ping}</span></span></p>
+              </div>
+
+              <button id="open-chat-${nickname}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-text" viewBox="0 0 16 16">
+                  <path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.347-.306c-.52.263-1.639.742-3.468 1.105"/>
+                  <path d="M4 5.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8m0 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5"/>
+                </svg>
+                Открыть чат
+              </button>
+
+              <button class="recreate-btn" id="recreate-${nickname}" style="color: #f10e0eff; margin-bottom: 12px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                  <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"/>
+                  <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"/>
+                </svg>
+                Пересоздать
+              </button>
+
+              <div class="chat-container" id="chat-${nickname}">
+                <div class="chat-element-group">
+                  <div class="left-group">
+                    <div class="custom-select" style="margin-top: 5px;">
+                      <select id="select-chat-filter-${nickname}" style="background: #292828b6;">
+                        <option value="all">Все сообщения</option>
+                        <option value="bans">Блокировки</option>
+                        <option value="mentions">Упоминания</option>
+                        <option value="links">Ссылки</option>
+                      </select>
+                    </div>
+
+                    <button id="filter-chat-${nickname}">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel" viewBox="0 0 16 16">
+                        <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2z"/>
+                      </svg>
+                      Фильтровать
+                    </button>
+                  </div>
+
+                  <div class="right-group">
+                    <button id="clear-chat-${nickname}" style="color: #ff0000e7;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                        <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+                      </svg>
+                      Очистить
+                    </button>
+
+                    <button id="close-chat-${nickname}" style="margin-left: 1px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+                      </svg>
+                      Закрыть
+                    </button>
+                  </div>
+                </div>
+
+                <div class="chat-content">
+                  <div class="monitoring-content" id="monitoring-chat-content-${nickname}"></div>
+                </div>
+
+                <p class="signature">Чат бота ${nickname}</p>
+              </div>
+            `;
+
+            this.botCardsContainer.appendChild(card);
+            this.chatHistoryFilters[nickname] = 'all';
+
+            statistics.nicknamesList.push(nickname);
+
+            setTimeout(() => this.initializeBotCard(nickname), 200);
+          }
+        } catch (error) {
+          log(`Ошибка парсинга SSE-сообщения (bots-monitoring): ${error}`, 'log-error');
+        }
+      }
+
+      eventSource.onerror = async () => {
+        log('Ошибка (bots-monitoring): SSE-connection was dropped', 'log-error');
+        eventSource.close();
+
+        this.botCardsContainer.innerHTML = '';
+
+        this.statusText.innerText = 'Ошибка соединения с сервером\nПодробнее: SSE-connection was dropped';
+        this.statusText.style.color = '#e32020ff';
+        this.statusText.style.display = 'block';
+      }
+    } catch (error) {
+      log(`Ошибка инициализации мониторинга ботов: ${error}`, 'log-error');
+    }
+  }
+
+  filterMessage(type, message) {
+    switch (type) {
+      case 'all':
+        return true;
+      case 'bans':
+        const blockingPatterns = [
+          'banned', 'ban', 'banned IP', 'IP banned',
+          'заблокирован', 'account ban', 'блокировка',
+          'IP заблокирован', 'заблокирован по IP', 
+          'забанен', 'IP забанен', 'забанили',
+          'blocked', 'IP blocked', 'account blocked'
+        ];
+
+        let valid = false;
+
+        blockingPatterns.forEach(word => {
+          if (message.toLowerCase().includes(word)) {
+            valid = true;
+          } 
+        });
+
+        return valid;
+      case 'mentions':
+        if (message.toLowerCase().includes('@')) return true;
+      case 'links':
+        if (message.toLowerCase().includes('http://') || message.toLowerCase().includes('https://')) return true;
+    }
+
+    return false;
+  }
+
+  async chatHistoryMonitoring() {
+    try {
+      const eventSource = new EventSource(`${localhost}/session/monitoring/chat-history`);
+
+      eventSource.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          const nickname = data.nickname;
+          const type = data.type;
+          const text = data.text;
+
+          if (!this.filterMessage(this.chatHistoryFilters[nickname], String(text))) return;
+
+          const chat = document.getElementById(`monitoring-chat-content-${nickname}`);
+
+          if (!chat) return;
+
+          const container = document.createElement('div');
+
+          container.className = 'monitoring-line';
+          container.id = `monitoring-message-${nickname}`;
+
+          container.innerHTML = `
+            <div class="monitoring-line-time">${date()}</div>
+            <div class="monitoring-line-content"><span class="monitoring-type">(${type})</span> ${String(text).replace('%hb', '<span style="color: #a85fdfff; font-weight: 600;">').replace('%sc', '</span>')}</div>
+          `;
+
+          chat.appendChild(container);
+
+          if (!this.chatMessageCounter[nickname]) {
+            this.chatMessageCounter[nickname] = 1;
+          } else {
+            this.chatMessageCounter[nickname] = this.chatMessageCounter[nickname] + 1;
+
+            if (this.chatMessageCounter[nickname] > this.maxChatHistoryLength) {
+              this.chatMessageCounter[nickname] = this.chatMessageCounter[nickname] - 1;
+              chat.firstChild.remove();
+            }
+          }
+
+          chat.scrollTo({
+            top: chat.scrollHeight,
+            behavior: 'smooth'
+          });
+        } catch (error) {
+          log(`Ошибка парсинга SSE-сообщения (chat-monitoring): ${error}`, 'log-error');
+        }
+      }
+
+      eventSource.onerror = async () => {
+        log('Ошибка (chat-monitoring): SSE-connection was dropped', 'log-error');
+        eventSource.close();
+
+        this.chatMessageCounter = {};
+
+        for (const nickname of statistics.nicknamesList) {
+          const chat = document.getElementById(`monitoring-chat-content-${nickname}`);
+
+          chat.innerHTML = '';
+          chat.style.display = 'none';
+          chat.remove();
+        }
+      }
+    } catch (error) {
+      log(`Ошибка инициализации мониторинга чата: ${error}`, 'log-error');
+    }
+  }
+}
+
 const functions = new Functions();
 const graphic = new GraphicManager();
+const monitoring = new MonitoringManager();
 
 setInterval(async () => {
   if (!statistics.isInitialized) return;
 
   const elements = document.querySelectorAll('[conserve="true"]');
 
-  const data = {};
+  const config = {};
 
   for (const element of elements) {
     if (element.type === 'checkbox') {
-      data[element.name] = {
+      config[element.name] = {
         id: element.id,
         value: element.checked
       };
     } else {
-      data[element.name] = {
+      config[element.name] = {
         id: element.id,
         value: element.type === 'number' ? parseInt(element.value) : element.value
       };
     }
   }
 
-  if (JSON.stringify(data) === JSON.stringify(statistics.latestConfig)) return;
+  if (JSON.stringify(config) === JSON.stringify(statistics.latestConfig)) return;
 
-  await sendDataTo({ url: 'http://localhost:37182/salarixi/utils/config/write', method: 'POST', useHeaders: true }, { 
-    key: 'salarixionion:1.0.0:ol13Rqk:config:write',
-    config: data
+  await sendDataTo({ url: 'http://localhost:37182/salarixi/system/config/write', method: 'POST', useHeaders: true }, { 
+    key: 'salarixionion:j3l14rFj',
+    data: { config: config }
   });
 
-  statistics.latestConfig = data;
-}, 1500);
+  statistics.latestConfig = config;
+}, 1400);
 
 async function loadConfig() {
   log('Загрузка конфига...', 'log-system');
 
-  const operation = await sendDataTo({ url: 'http://localhost:37182/salarixi/utils/config/read', method: 'POST', useHeaders: true }, { 
-    key: 'salarixionion:1.0.0:Yi8jQ13e:config:read'
+  const operation = await sendDataTo({ url: 'http://localhost:37182/salarixi/system/config/read', method: 'POST', useHeaders: true }, { 
+    key: 'salarixionion:j3l14rFj'
   });
 
   if (!operation.success) {
@@ -1670,7 +2028,7 @@ async function initializeInformationCard() {
   const clientTypeContainer = document.getElementById('client-type');
   const clientReleaseDateContainer = document.getElementById('client-release-date');
 
-  const info = await client.info();
+  const info = await client.getInfo();
 
   if (info.type === 'Beta') {
     clientHeaderContainer.classList.add('beta');
@@ -1678,20 +2036,22 @@ async function initializeInformationCard() {
     clientHeaderContainer.classList.add('expert');
   }
 
-  const header = `${info.type}-Release`;
+  const header = `${info.type} Release`;
 
   clientHeaderContainer.innerText = header;
   clientVersionContainer.innerText = info.version;
   clientTypeContainer.innerText = info.type;
   clientReleaseDateContainer.innerText = info.date;
+}
 
-  const copyGithubLinkBtn = document.getElementById('copy-github-link-btn');
-  const copyTelegramLinkBtn = document.getElementById('copy-telegram-link-btn');
-  const copyYoutubeLinkBtn = document.getElementById('copy-youtube-link-btn');
+async function initializeSocialButtons() {
+  const telegram = document.getElementById('telegram');
+  const github = document.getElementById('github');
+  const youtube = document.getElementById('youtube');
 
-  copyGithubLinkBtn.addEventListener('click', () => navigator.clipboard.writeText('https://github.com/nullclyze/SalarixiOnion')); 
-  copyTelegramLinkBtn.addEventListener('click', () => navigator.clipboard.writeText('https://t.me/salarixionion'));
-  copyYoutubeLinkBtn.addEventListener('click', () => navigator.clipboard.writeText('https://www.youtube.com/@salarixionion'));
+  telegram.addEventListener('click', async () => await client.openUrl('https://t.me/salarixionion')); 
+  github.addEventListener('click', async () => await client.openUrl('https://github.com/nullclyze/SalarixiOnion'));
+  youtube.addEventListener('click', async () => await client.openUrl('https://www.youtube.com/@salarixionion'));
 }
 
 async function initializePanel() {
@@ -1812,380 +2172,6 @@ async function initializeGraphicAverageLoad() {
   }
 }
 
-function messageFilter(type, message) {
-  switch (type) {
-    case 'all':
-      return true;
-    case 'bans':
-      const blockingPatterns = [
-        'banned', 'ban', 'banned IP', 'IP banned',
-        'заблокирован', 'account ban', 'блокировка',
-        'IP заблокирован', 'заблокирован по IP', 
-        'забанен', 'IP забанен', 'забанили',
-        'blocked', 'IP blocked', 'account blocked'
-      ];
-
-      let valid = false;
-
-      blockingPatterns.forEach(word => {
-        if (message.toLowerCase().includes(word)) {
-          valid = true;
-        } 
-      });
-
-      return valid;
-    case 'mentions':
-      if (message.toLowerCase().includes('@')) {
-        return true;
-      } 
-    case 'links':
-      if (message.toLowerCase().includes('http://') || message.toLowerCase().includes('https://')) {
-        return true;
-      } 
-  }
-
-  return false;
-}
-
-function initializeBotCard(nickname) {
-  const openChatBtn = document.getElementById(`open-chat-${nickname}`);
-  const recreateBotBtn = document.getElementById(`recreate-${nickname}`);
-
-  const filterChatBtn = document.getElementById(`filter-chat-${nickname}`);
-  const clearChatBtn = document.getElementById(`clear-chat-${nickname}`);
-  const closeChatBtn = document.getElementById(`close-chat-${nickname}`);
-
-  openChatBtn.addEventListener('click', () => {
-    try {
-      const chatContainer = document.getElementById(`chat-${nickname}`);
-
-      chatContainer.style.display = 'flex';
-    } catch (error) {
-      log(`Ошибка открытия чата (${nickname}): ${error}`, 'log-error');
-    }
-  });
-
-  recreateBotBtn.addEventListener('click', async () => {
-    try {
-      const operation = await sendDataTo({ url: `${localhost}/advanced/recreate`, method: 'POST', useHeaders: true }, { 
-        nickname: nickname
-      });
-
-      log(operation.answer.data.message, `log-${operation.answer.type}`);
-    } catch (error) {
-      log(`Ошибка пересоздания бота ${nickname}: ${error}`, 'log-error');
-    }
-  });
-
-  filterChatBtn.addEventListener('click', () => {
-    try {
-      const chat = document.getElementById(`monitoring-chat-content-${nickname}`);
-      const type = document.getElementById(`select-chat-filter-${nickname}`);
-
-      const messages = document.querySelectorAll(`#monitoring-message-${nickname}`);
-
-      switch (type.value) {
-        case 'all':
-          chat.innerHTML = '';
-
-          chatHistoryFilters[nickname] = 'all';
-
-          messages.forEach(msg => {
-            chat.appendChild(msg);
-          }); break;
-        case 'bans':
-          chat.innerHTML = '';
-
-          chatHistoryFilters[nickname] = 'bans';
-
-          messages.forEach(msg => {
-            if (messageFilter('bans', msg.textContent)) {
-              chat.appendChild(msg);
-            }
-          }); break;
-        case 'mentions':
-          chat.innerHTML = '';
-
-          chatHistoryFilters[nickname] = 'mentions';
-
-          messages.forEach(msg => {
-            if (messageFilter('mentions', msg.textContent)) {
-              chat.appendChild(msg);
-            }
-          }); break;
-        case 'links':
-          chat.innerHTML = '';
-
-          chatHistoryFilters[nickname] = 'links';
-
-          messages.forEach(msg => {
-            if (messageFilter('links', msg.textContent)) {
-              chat.appendChild(msg);
-            }
-          }); break;
-      }
-    } catch (error) {
-      log(`Ошибка фильтровки чата (${nickname}): ${error}`, 'log-error');
-    }
-  });
-
-  clearChatBtn.addEventListener('click', () => {
-    try {
-      const messages = document.querySelectorAll(`#monitoring-message-${nickname}`);
-
-      messages.forEach(msg => msg.remove());
-
-      chatMsgIndex[nickname] = 0;
-    } catch (error) {
-      log(`Ошибка очистки чата (${nickname}): ${error}`, 'log-error');
-    }
-  });
-
-  closeChatBtn.addEventListener('click', () => {
-    try {
-      const container = document.getElementById(`chat-${nickname}`);
-
-      container.style.display = 'none';
-    } catch (error) {
-      log(`Ошибка закрытия чата (${nickname}): ${error}`, 'log-error');
-    }
-  });
-}
-
-async function initializeProfileDataMonitoring() {
-  try {
-    const monitoringStatusText = document.getElementById('monitoring-status-text');
-    const monitoringContent = document.getElementById('bots-cards-container');
-    const steveIconPngPath = document.getElementById('steve-img');
-
-    const eventSource = new EventSource(`${localhost}/session/monitoring/profile-data`);
-
-    eventSource.onmessage = async (event) => {
-      try {
-        if (!activity.botting) return;
-
-        const data = JSON.parse(event.data);
-
-        const { 
-          nickname, status, statusColor, 
-          version, password, proxyType, 
-          proxy, load, loadColor, 
-          ping, pingColor
-        } = data;
-
-        if (statistics.nicknamesList.length === 0) {
-          monitoringStatusText.style.display = 'none';
-        }
-
-        if (statistics.nicknamesList.includes(nickname)) {
-          let botStatus = document.getElementById(`bot-status-${nickname}`);
-          let botVersion = document.getElementById(`bot-version-${nickname}`);
-          let botPassword = document.getElementById(`bot-password-${nickname}`);
-          let botProxyType = document.getElementById(`bot-proxy-type-${nickname}`);
-          let botProxy = document.getElementById(`bot-proxy-${nickname}`);
-          let botLoad = document.getElementById(`bot-load-${nickname}`);
-          let botPing = document.getElementById(`bot-ping-${nickname}`);
-
-          botStatus.innerHTML = `<span style="color: ${statusColor};">• ${status}</span>`;
-          botVersion.innerHTML = `  ${version}`;
-          botPassword.innerHTML = `  ${password}`;
-          botProxyType.innerHTML = `  ${proxyType}`;
-          botProxy.innerHTML = `  ${proxy}`;
-          botLoad.innerHTML = `<span style="color: ${loadColor};">  ${load}</span>`;
-          botPing.innerHTML = `<span style="color: ${pingColor};">  ${ping}</span>`;
-        } else {
-          const card = document.createElement('div');
-          card.className = 'bot-card';
-
-          card.innerHTML = `
-            <div class="bot-card-head">
-              <img src="${steveIconPngPath.src}" class="image" draggable="false">
-              <div class="text">
-                <div class="bot-basic-info">
-                  <div class="bot-nickname" style="user-select: text; -moz-user-select: text;">${nickname}</div>
-                  <div class="bot-status"><span id="bot-status-${nickname}" style="color: ${statusColor};">• ${status}</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bot-advanced-info">
-              <p>Версия:<span id="bot-version-${nickname}">  ${version}</span></p>
-              <p>Пароль:<span id="bot-password-${nickname}">  ${password}</span></p>
-              <p>Тип прокси:<span id="bot-proxy-type-${nickname}">  ${proxyType}</span></p>
-              <p>Прокси:<span id="bot-proxy-${nickname}">  ${proxy}</span></p>
-              <p>Нагрузка:<span id="bot-load-${nickname}"><span style="color: ${loadColor};">  ${load}</span></span></p>
-              <p>Пинг:<span id="bot-ping-${nickname}"><span style="color: ${pingColor};">  ${ping}</span></span></p>
-            </div>
-
-            <button id="open-chat-${nickname}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              Открыть чат
-            </button>
-
-            <button id="recreate-${nickname}" style="color: #f10e0eff;" class="recreate-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-              Пересоздать
-            </button>
-
-            <div class="chat-container" id="chat-${nickname}">
-              <div class="chat-element-group">
-                <div class="left-group">
-                  <div class="custom-select" style="margin-top: 5px;">
-                    <select id="select-chat-filter-${nickname}" style="background: #292828b6;">
-                      <option value="all">Все сообщения</option>
-                      <option value="bans">Блокировки</option>
-                      <option value="mentions">Упоминания</option>
-                      <option value="links">Ссылки</option>
-                    </select>
-                  </div>
-
-                  <button id="filter-chat-${nickname}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel" viewBox="0 0 16 16">
-                      <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2z"/>
-                    </svg>
-                    Фильтровать
-                  </button>
-                </div>
-
-                <div class="right-group">
-                  <button id="clear-chat-${nickname}" style="color: #ff0000e7;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
-                      <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
-                    </svg>
-                    Очистить
-                  </button>
-
-                  <button id="close-chat-${nickname}" style="margin-left: 1px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
-                      <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-                    </svg>
-                    Закрыть
-                  </button>
-                </div>
-              </div>
-
-              <div class="chat-content">
-                <div class="monitoring-content" id="monitoring-chat-content-${nickname}"></div>
-              </div>
-
-              <p class="signature">Чат бота ${nickname}</p>
-            </div>
-          `;
-
-          monitoringContent.appendChild(card);
-
-          statistics.nicknamesList.push(nickname);
-          chatHistoryFilters[nickname] = 'all';
-
-          setTimeout(() => initializeBotCard(nickname), 300);
-        }
-      } catch (error) {
-        log(`Ошибка парсинга SSE-сообщения (bots-monitoring): ${error}`, 'log-error');
-      }
-    }
-
-    eventSource.onerror = async () => {
-      log('Ошибка (bots-monitoring): SSE-connection was dropped', 'log-error');
-      eventSource.close();
-
-      monitoringContent.innerHTML = '';
-      monitoringStatusText.innerText = 'Ошибка соединения с сервером\nПодробнее: SSE-connection was dropped';
-      monitoringStatusText.style.color = '#e32020ff';
-      monitoringStatusText.style.display = 'block';
-    }
-  } catch (error) {
-    log(`Ошибка инициализации мониторинга ботов: ${error}`, 'log-error');
-  }
-}
-
-async function initializeChatHistoryMonitoring() {
-  try {
-    const eventSource = new EventSource(`${localhost}/session/monitoring/chat-history`);
-
-    eventSource.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        const nickname = data.nickname;
-        const type = data.type;
-        const text = data.text;
-        const maxLength = data.maxLength;
-
-        if (!messageFilter(chatHistoryFilters[nickname], String(text))) return;
-
-        const monitoringContent = document.getElementById(`monitoring-chat-content-${nickname}`);
-
-        if (!monitoringContent) return;
-
-        const container = document.createElement('div');
-
-        container.className = 'monitoring-line';
-        container.id = `monitoring-message-${nickname}`;
-
-        container.innerHTML = `
-          <div class="monitoring-line-time">${date()}</div>
-          <div class="monitoring-line-content"><span class="monitoring-type">(${type})</span> ${String(text).replace('%hb', '<span style="color: #a85fdfff; font-weight: 600;">').replace('%sc', '</span>')}</div>
-        `;
-
-        monitoringContent.appendChild(container);
-
-        if (!chatMsgIndex[nickname]) {
-          chatMsgIndex[nickname] = 1;
-        } else {
-          chatMsgIndex[nickname] = chatMsgIndex[nickname] + 1;
-
-          if (chatMsgIndex[nickname] > maxLength) {
-            chatMsgIndex[nickname] = chatMsgIndex[nickname] - 1;
-            monitoringContent.firstChild.remove();
-          }
-        }
-
-        monitoringContent.scrollTo({
-          top: monitoringContent.scrollHeight,
-          behavior: 'smooth'
-        });
-      } catch (error) {
-        log(`Ошибка парсинга SSE-сообщения (chat-monitoring): ${error}`, 'log-error');
-      }
-    }
-
-    eventSource.onerror = async () => {
-      log('Ошибка (chat-monitoring): SSE-connection was dropped', 'log-error');
-      eventSource.close();
-
-      chatMsgIndex = {};
-
-      for (const nickname of statistics.nicknamesList) {
-        const content = document.getElementById(`monitoring-chat-content-${nickname}`);
-
-        content.innerHTML = '';
-        content.style.display = 'none';
-        content.remove();
-      }
-    }
-  } catch (error) {
-    log(`Ошибка инициализации мониторинга чата: ${error}`, 'log-error');
-  }
-}
-
-async function clearMonitoringData() {
-  const monitoringBotsCards = document.querySelectorAll('#bot-card');
-  const monitoringStatusText = document.getElementById('monitoring-status-text');
-
-  chatMsgIndex = {};
-  chatHistoryFilters = {};
-
-  monitoringBotsCards.forEach(card => card.remove());
-
-  monitoringStatusText.innerText = 'Объекты ботов отсутствуют';
-  monitoringStatusText.style.color = '#646464f7';
-  monitoringStatusText.style.display = 'block';
-}
-
 async function checkUpdate() {
   try {
     const closeNoticeBtn = document.getElementById('close-notice-btn');
@@ -2207,7 +2193,7 @@ async function checkUpdate() {
     if (!response.ok) return;
 
     const data = await response.json();
-    const info = await client.info();
+    const info = await client.getInfo();
 
     if (data && data.version !== info.version) {
       newVersion.innerText = data.version;
@@ -2271,15 +2257,91 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initializeInformationCard();
   await initializeControlContainer();
 
+  await initializeSocialButtons();
+
+  function updateProxyCount() {
+    const proxyList = document.getElementById('proxy-list');
+    const proxyCount = document.getElementById('proxy-count');
+
+    proxyCount.innerText = String(proxyList.value).split('\n').length - 1;
+  }
+
+  document.getElementById('proxy-list').addEventListener('input', () => updateProxyCount());
+
+  document.getElementById('load-proxy-file').addEventListener('click', async () => {
+    const path = await client.openFile();
+    const splitPath = String(path).split('.');
+
+    if (splitPath[splitPath.length - 1] === 'txt') {
+      const operation = await sendDataTo({ url: `http://localhost:37182/salarixi/system/proxy/text`, method: 'POST', useHeaders: true }, {
+        key: 'salarixionion:j3l14rFj',
+        data: { path: path }
+      });
+
+      if (operation.success) {
+        const proxyList = document.getElementById('proxy-list');
+
+        let isFirst = true;
+
+        for (const element of String(operation.answer.data).split(',')) {
+          isFirst ? isFirst = false : proxyList.value += '\n';
+          proxyList.value += element;
+        }
+      } else {
+        log(`Ошибка загрузки файла: ${operation.message}`, 'log-error');
+      }
+    } else if (splitPath[splitPath.length - 1] === 'json') {
+      const operation = await sendDataTo({ url: `http://localhost:37182/salarixi/system/proxy/json`, method: 'POST', useHeaders: true }, {
+        key: 'salarixionion:j3l14rFj',
+        data: { path: path }
+      });
+
+      if (operation.success) {
+        const proxyList = document.getElementById('proxy-list');
+        
+        const data = operation.answer.data;
+
+        let isFirst = true;
+
+        const protocols = ['http', 'socks4', 'socks5'];
+
+        for (const protocol of protocols) {
+          if (data[protocol]) {
+            for (const proxy of data[protocol]) {
+              isFirst ? isFirst = false : proxyList.value += '\n';
+              proxyList.value += `${protocol}://${proxy}`;
+            }
+          }
+        }
+  
+        log(JSON.stringify(data), 'log-system');
+      } else {
+        log(`Ошибка загрузки файла: ${operation.message}`, 'log-error');
+      }
+    }
+
+    updateProxyCount();
+  });
+
+  document.getElementById('clear-proxy-list').addEventListener('click', () => {
+    const proxyList = document.getElementById('proxy-list');
+    proxyList.value = '';
+    updateProxyCount();
+  });
+
   await initializeGraphicActiveBots();
   await initializeGraphicAverageLoad();
 
-  await initializeProfileDataMonitoring();
-  await initializeChatHistoryMonitoring();
-
+  await monitoring.init().then(async () => {
+    await monitoring.profileDataMonitoring();
+    await monitoring.chatHistoryMonitoring();
+  });
+  
   await functions.initializeButtonFunctions();
   await functions.initializeCheckboxFunctions();
   await functions.initializeSelectFunctions();
+
+  updateProxyCount();
 
   statistics.isInitialized = true;
 

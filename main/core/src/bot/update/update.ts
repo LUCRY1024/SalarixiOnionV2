@@ -3,8 +3,8 @@ import { msg } from '../../api/session.js';
 export function updateBotProfileData(data: any) {
   const version = data.profile.version;
   const password = data.profile.password;
-  const proxyType = data.profile.proxyType.toUpperCase() || '-';
-  const proxy = data.profile.proxy.split(':')[0] || 'Не использует';
+  const proxyType = data.profile.proxyType.toUpperCase() || '─';
+  const proxy = data.profile.proxy.split(':')[0] || '─';
   const status = data.profile.status;
   const load = data.profile.load;
   const ping = data.profile.ping;
@@ -51,11 +51,10 @@ export function updateBotProfileData(data: any) {
   });
 }
 
-export function updateBotChatHistory(data: any, maxLength: number) {
+export function updateBotChatHistory(data: any) {
   msg('monitoring:chat-history', {
     nickname: data.nickname,
     type: data.type,
-    text: data.text,
-    maxLength: maxLength
+    text: data.text
   });
 }

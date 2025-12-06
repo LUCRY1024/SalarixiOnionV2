@@ -1165,26 +1165,30 @@ export class Flight {
   }
 
   private async defaultFlight(bot: Bot, options: any) {
-    if (!bot.object) return;
+    try {
+      if (!bot.object) return;
+      
+      if (options.useSpoofing) {
+        bot.control('spoofer', 'on', { useSharpness: false, useBuffering: true });
+      }
 
-    if (options.useSpoofing) {
-      bot.control('spoofer', 'on', { useSharpness: false, useBuffering: true });
+      while (bot.tasks.flight.status) {
+        this.boost(bot);
+
+        for (let i = 0; i < generateNumber('int', 4, options.useHighPower ? 10 : 6); i++) {
+          this.lift(bot);
+          await sleep(false, { min: 5, max: 10 });
+        }
+
+        if (options.useHovering) {
+          await this.hover(bot);
+        } else {
+          await sleep(false, { min: 100, max: 150 });
+        }
+      }
+    } finally {
+      bot.control('spoofer', 'off', undefined);
     }
-
-    const interval = setInterval(async () => {
-      if (!bot.tasks.flight.status) {
-        bot.control('spoofer', 'off', undefined);
-        clearInterval(interval);
-        return;
-      }
-
-      this.boost(bot);
-
-      for (let i = 0; i < generateNumber('int', 4, options.useHighPower ? 10 : 6); i++) {
-        this.lift(bot);
-        await sleep(false, { min: 5, max: 10 });
-      }
-    }, generateNumber('float', 80, 200));
   }
 
   private async jumpFlight(bot: Bot, options: any) {
@@ -1213,7 +1217,11 @@ export class Flight {
 
         bot.object.setControlState('jump', false);
 
-        await this.hover(bot);
+        if (options.useHovering) {
+          await this.hover(bot);
+        } else {
+          await sleep(false, { min: 100, max: 150 });
+        }
       }
     } finally {
       bot.control('spoofer', 'off', undefined);
@@ -1244,7 +1252,11 @@ export class Flight {
 
         this.glitch(bot);
 
-        await this.hover(bot);
+        if (options.useHovering) {
+          await this.hover(bot);
+        } else {
+          await sleep(false, { min: 100, max: 150 });
+        }
       }
     } finally {
       bot.control('spoofer', 'off', undefined);
@@ -1311,7 +1323,7 @@ export class Flight {
     if (!bot.object) return;
 
     const startTime = Date.now();
-    const duration = generateNumber('float', 60, 100);
+    const duration = generateNumber('float', 80, 100);
     const y = bot.object.entity.position.y;
 
     while (Date.now() - startTime < duration) {

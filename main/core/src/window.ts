@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -14,8 +14,8 @@ app.commandLine.appendSwitch('no-sandbox');
 
 const client = {
   version: '1.0.1',
-  type: 'Beta',
-  date: '03.12.2025'
+  type: 'Expert',
+  date: '06.12.2025'
 };
 
 let win: BrowserWindow;
@@ -35,7 +35,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      devTools: false
+      devTools: false,
+      spellcheck: false
     }
   });
 
@@ -64,6 +65,12 @@ ipcMain.handle('client', async (_, cmd, options) => {
           win.close();
           app.quit();
         }; break;
+      case 'open-file':
+        await dialog.showOpenDialog(win, { properties: ['openFile'] }).then(r => {
+          result = r.filePaths[0];
+        }); break;
+      case 'open-url':
+        result = await shell.openExternal(options.url); break;
     }
 
     return { success: true, result: result };

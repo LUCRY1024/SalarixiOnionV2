@@ -41,7 +41,7 @@ export function mutateText(options: any) {
   text = text.replace(/#w\(([yYnN]):([yYnN])\)/g, (_: any, useGlitch: string, useWave: string) => {
     let word = chooseRandomElementFromArray(nicknames);
 
-    if (String(useGlitch).toLowerCase() === 'y') {
+    if (useGlitch.toLowerCase() === 'y') {
       let glitchWord = '';
 
       for (const char of word) {
@@ -66,7 +66,7 @@ export function mutateText(options: any) {
       word = glitchWord;
     }
 
-    if (String(useWave).toLowerCase() === 'y') {
+    if (useWave.toLowerCase() === 'y') {
       let waveWord = '';
 
       for (const char of word) {

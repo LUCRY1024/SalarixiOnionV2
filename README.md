@@ -69,15 +69,21 @@ The client has several large sections, they will be presented below in the table
 
 ![](./images/settings.png)
 
-![](./images/control.png)
+![](./images/proxy.png)
 
-![](./images/control-attack.png)
+![](./images/control.png)
 
 ![](./images/graphic.png)
 
+![](./images/monitoring.png)
+
 ![](./images/monitoring-chat.png)
 
-![](./images/tab.png)
+![](./images/log.png)
+
+![](./images/about.png)
+
+![](./images/tab.jpg)
 
 ## 💾 Installation
 
@@ -100,5 +106,5 @@ The client has several large sections, they will be presented below in the table
 ## 📜 Additional Information
 
 - **Latest Beta-Release:** [Beta-Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.1-beta)
-- **Latest Expert-Release:** [Expert-Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.0-expert)
+- **Latest Expert-Release:** [Expert-Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.1-expert)
 - **License:** [MIT License](./LICENSE)

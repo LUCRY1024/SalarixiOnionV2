@@ -4,12 +4,12 @@ import { Bot, activeBots } from '../bot/base.js';
 import { mutateText } from '../bot/utils/mutator.js';
 import { chooseRandomElementFromArray } from '../bot/utils/generator.js';
 
-export let ACTIVE = false;
+export let active = false;
 
 export class Processor {
   public async start(options: any) {
     try {
-      if (ACTIVE && activeBots.size > 0) {
+      if (active && activeBots.size > 0) {
         return { type: 'warning', info: {
           success: false,
           message: 'Предупреждение (start-bots-process): Существуют активные боты, запуск невозможен'
@@ -30,7 +30,7 @@ export class Processor {
       let index = 0;
 
       for (let i = 0; i < options.quantity; i++) {
-        if (!ACTIVE) break;
+        if (!active) break;
 
         await new Promise(resolve => setTimeout(resolve, options.delay));
 
@@ -74,7 +74,6 @@ export class Processor {
           options.rejoinQuantity,
           options.rejoinDelay,
           options.dataUpdateFrequency,
-          options.chatHistoryLength,
           proxy,
           options.useKeepAlive,
           options.usePhysics,
@@ -136,7 +135,7 @@ export class Processor {
   }
 
   public checkActive() {
-    if (ACTIVE || activeBots.size > 0) {
+    if (active || activeBots.size > 0) {
       return true;
     } else {
       return false;
@@ -144,4 +143,4 @@ export class Processor {
   }
 }
 
-export function changeActive(state: boolean) { ACTIVE = state };
+export function changeActive(state: boolean) { active = state };

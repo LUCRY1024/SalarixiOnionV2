@@ -8,6 +8,7 @@ import { generateNumber } from './utils/generator.js';
 
 import { updateBotProfileData, updateBotChatHistory } from './update/update.js';
 
+
 export let activeBots: Map<string, Bot> = new Map();
 
 export class Bot {
@@ -31,7 +32,6 @@ export class Bot {
 		public rejoinQuantity: number,
 		public rejoinDelay: number,
 		public dataUpdateFrequency: number,
-		public chatHistoryLength: number,
 		public proxy: string | undefined,
 		public useKeepAlive: boolean,
 		public usePhysics: boolean,
@@ -95,6 +95,7 @@ export class Bot {
 
 		this.tasks = {
 			basic: { status: false, load: 0 },
+			auth: { status: false, load: 0 },
 			analysis: { status: false, load: 0 },
 			message: { status: false, load: 0 },
 			spamming: { status: false, load: 0 },
@@ -142,6 +143,11 @@ export class Bot {
 	private async create() {
 		try {
 			let object = null;
+
+			msg('process:botting', {
+				type: 'system',
+				message: `Создание бота ${this.nickname}...`
+			});
 
 			this.profile.status = { text: 'Соединение...', color: '#8f8f8fff' };
 
@@ -213,7 +219,7 @@ export class Bot {
 
 					const url = new URL(this.proxy);
 					const host = url.hostname;
-					const port = parseInt(url.port) || 80;
+					const port = parseInt(url.port);
 					const username = url.username;
 					const password = url.password;
 
@@ -270,8 +276,8 @@ export class Bot {
 					});
 				}
 			} else {
-				this.profile.proxyType = '-';
-				this.profile.proxy = 'Не использует';
+				this.profile.proxyType = '─';
+				this.profile.proxy = '─';
 				
 				object = mineflayer.createBot(options);
 			}
@@ -338,11 +344,6 @@ export class Bot {
 				message: `Бот ${this.nickname} успешно создан`
 			};
 		} catch (error) {
-			msg('process:botting', {
-				type: 'error',
-				message: `Ошибка создания ${this.nickname}: ${error}`
-			});
-			
 			return {
 				success: false,
 				message: `Ошибка создания ${this.nickname}: ${error}`
@@ -400,6 +401,13 @@ export class Bot {
 		try {
 			if (!this.object) return;
 
+			msg('process:botting', {
+				type: 'system',
+				message: `Аутентификация бота ${this.nickname}...`
+			});
+
+			this.updateTask('auth', true, 0.8);
+
 			if (type === 'register') {
 				if (!this.profile.registered) {
 					const text = this.registerTemplate
@@ -450,7 +458,12 @@ export class Bot {
 				}
 			}
 		} catch (error) {
-			console.log(`( ${this.nickname} / auth ) Ошибка: ${error}`);
+			msg('process:botting', {
+				type: 'error',
+				message: `Ошибка у бота ${this.nickname}: ${error}`
+			});
+		} finally {
+			this.updateTask('auth', false);
 		}
 	}
 
@@ -465,7 +478,7 @@ export class Bot {
 					if (type === 'join') {
 						msg('process:botting', {
 							type: 'info',
-							message: `Создан новый бот: ${this.nickname}`
+							message: `Бот ${this.nickname} создан`
 						});
 
 						if (this.useAutoRegister) await this.auth('register');
@@ -556,7 +569,7 @@ export class Bot {
 						text: isBot ? `%hb[ БОТ ]%sc ${text}` : text
 					};
 
-					updateBotChatHistory(msg, this.chatHistoryLength);
+					updateBotChatHistory(msg);
 				} catch (error) {
 					if (error instanceof TypeError) return;
 					console.log(`( ${this.nickname} / message ) Ошибка: ${error}`);
@@ -644,7 +657,7 @@ export class Bot {
 
 					this.clean();
 
-					this.profile.status = { text: 'Оффлайн', color: '#ed1717ff' };
+					this.profile.status = { text: 'Повреждён', color: '#ed1717ff' };
 
 					msg('process:botting', {
 						type: 'error',
@@ -709,6 +722,11 @@ export class Bot {
 
 		this.profile.pingChecker = undefined;
 		this.profile.playerSaver = undefined;
+
+		msg('process:botting', {
+			type: 'system',
+			message: `Данные бота ${this.nickname} очищены`
+		});
 	}
 
 	public control(tool: string, status: string, options: any) {
