@@ -43,25 +43,18 @@ The client has several large sections, they will be presented below in the table
 
 ## 💥 Features
 
-- 🚀 Easy to use
-- ⚡ Fast and smart
-- 💎 Absolutely free
-- 💥 Beautiful design
-- ✨ Clear logic
-- 💕 Open source
-- 🌀 Great functionality
-- 💯 Good optimization
-- ♾️ Good flexibility of settings
-- 📊 Data visualization
-- 🌐 Real-time monitoring
-- 📅 Event logging
-- 💦 Good stability
-- 🧨 Cheat functions
-- 💻 Hack functions
-- 🌏 SOCKS5, SOCKS4, HTTP proxy support
-- 📶 Premium proxy support
-- 🎁 Creating your own scripts
-- 💾 Support for multiple Minecraft versions
+- 🚀 **Easy to use:** Quick adaptation to the client. Intuitive interface.
+- ⚡ **Fast and smart:** All transactions in the client are fast. The client contains several smart managers for any tasks.
+- 💎 **Absolutely free:** All functionality in the client is free.
+- 💥 **Beautiful design:** The client has a clear and beautiful dark design.
+- 💕 **Open source:** The client is completely open source.
+- 🌀 **Great functionality:** The client offers a lot of functionality that is very flexible in settings and well optimized.
+- 📊 **Data visualization:** For convenience, the client visualizes the data in the form of graphs.
+- 🌐 **Real-time monitoring:** The client has real-time bot monitoring. It is highly optimized and has customizations.
+- 📅 **Event logging:** The client has a log in which any information is logged.
+- 🧨 **Cheat functions:** The client contains unique functionality in the form of real cheats for bots.
+- 🌏 **Proxy support:** The client supports all proxy protocols.
+- 🎁 **Creating your own scripts**: The client allows you to write your own scripts for bots
 
 ## 📷 Gallery
 
@@ -107,5 +100,5 @@ The client has several large sections, they will be presented below in the table
 
 - **Latest Beta-Release:** [Beta-Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.1-beta)
 - **Latest Expert-Release:** [Expert-Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.1-expert)
-
 - **License:** [MIT License](./LICENSE)
+
