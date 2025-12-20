@@ -1,6 +1,7 @@
+/*
 import fs from 'fs';
 
-import { Bot, activeBots } from '../bot/base.js';
+import { bots } from '../bot/base.js';
 import { mutateText } from '../bot/utils/mutator.js';
 import { chooseRandomElementFromArray } from '../bot/utils/generator.js';
 
@@ -9,7 +10,7 @@ export let active = false;
 export class Processor {
   public async start(options: any) {
     try {
-      if (active && activeBots.size > 0) {
+      if (active && bots.size > 0) {
         return { type: 'warning', info: {
           success: false,
           message: 'Предупреждение (start-bots-process): Существуют активные боты, запуск невозможен'
@@ -35,14 +36,12 @@ export class Processor {
         await new Promise(resolve => setTimeout(resolve, options.delay));
 
         const version = mutateText({ text: options.version, advanced: false, data: null });
-        const nickname = mutateText({ text: options.nickname, advanced: false, data: null });
+        const username = mutateText({ text: options.username, advanced: false, data: null });
         const password = mutateText({ text: options.password, advanced: false, data: null });
         const registerCommand = mutateText({ text: options.registerCommand, advanced: false, data: null });
         const registerTemplate = mutateText({ text: options.registerTemplate, advanced: false, data: null });
         const loginCommand = mutateText({ text: options.loginCommand, advanced: false, data: null });
         const loginTemplate = mutateText({ text: options.loginTemplate, advanced: false, data: null });
-
-        const skipValidation = options.skipValidation === 'false' ? false : true;
 
         let proxy;
 
@@ -53,6 +52,40 @@ export class Processor {
         }
 
         index++;
+
+        await createBot({
+          address: options.address,
+          version: version,
+          quantity: options.quantity,
+          username: username,
+          password: password,
+          distance: options.distance,
+          timeout: options.timeout,
+          skipValidation: options.skipValidation,
+          registerCommand: registerCommand,
+          registerTemplate: registerTemplate,
+          registerMinDelay: options.registerMinDelay,
+          registerMaxDelay: options.registerMaxDelay,
+          loginCommand: loginCommand,
+          loginTemplate: loginTemplate,
+          loginMinDelay: options.loginMinDelay,
+          loginMaxDelay: options.loginMaxDelay,
+          rejoinQuantity: options.rejoinQuantity,
+          rejoinDelay: options.rejoinDelay,
+          dataUpdateFrequency: options.dataUpdateFrequency,
+          proxy: proxy,
+          useKeepAlive: options.useKeepAlive,
+          usePhysics: options.usePhysics,
+          useProxy: options.useProxy,
+          useAutoRegister: options.useAutoRegister,
+          useAutoLogin: options.useAutoLogin,
+          useAutoRejoin: options.useAutoRejoin,
+          useLogDeath: options.useLogDeath,
+          useSaveChat: options.useSaveChat,
+          useSavePlayers: options.useSavePlayers,
+          useOptimization: options.useOptimization,
+          useExtendedLogs: options.useExtendedLogs
+        });
 
         const bot = new Bot(
           options.address,
@@ -107,7 +140,7 @@ export class Processor {
 
   public async stop() {
     try {
-      if (!activeBots) {
+      if (!bots) {
         return { type: 'error', info: {
           success: false,
           message: 'Ошибка (stop-bots-process): Unable to get active bots'
@@ -116,11 +149,9 @@ export class Processor {
 
       changeActive(false);
 
-      activeBots.forEach(async bot => {
-        await bot.disconnect();
-      });
+      bots.forEach(async bot => bot.end('@salarixi:disconnect'));
       
-      activeBots.clear();
+      bots.clear();
 
       return { type: 'info', info: {
         success: true,
@@ -135,7 +166,7 @@ export class Processor {
   }
 
   public checkActive() {
-    if (active || activeBots.size > 0) {
+    if (active || bots.size > 0) {
       return true;
     } else {
       return false;
@@ -144,3 +175,4 @@ export class Processor {
 }
 
 export function changeActive(state: boolean) { active = state };
+*/

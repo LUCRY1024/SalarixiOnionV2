@@ -1,18 +1,11 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import path from 'path';
-import { exec } from 'child_process';
 
 import { transmit } from './transfer.js';
 import { add, del, msg } from './session.js';
-import { activeBots } from '../bot/base.js'
-import { Processor, changeActive } from '../common/processor.js';
-import { ScriptController } from '../common/scripter.js';
-import { flow } from '../common/flow.js';
-
-const processor = new Processor();
-const scripter = new ScriptController();
+import { startBots, stopBots, manipulateBot, flow } from '../bot/base.js'
+import { pool } from '../common/pool.js';
 
 export const app = express();
 
@@ -21,10 +14,6 @@ app.use(bodyParser.json());
 app.use(cors());
 
 function clear(response: any) {
-  activeBots.clear();
-
-  changeActive(false);
-
   transmit(response, 'system', {
     success: true,
     message: 'Данные очищены'
@@ -41,19 +30,16 @@ async function botting(action: 'start' | 'stop', request: any, response: any) {
         message: 'Начало запуска...'
       });
 
-      del('process:botting')
+      del('process:botting');
 
-      setTimeout(async () => await processor.start(options), 100);
+      setTimeout(async () => await startBots(options), 100);
     } else if (action === 'stop') {
+      const result = await stopBots();
 
-      await processor.stop().then(({ type, info: { success, message } }) => {
-        transmit(response, type, {
-          success: success,
-          message: message
-        });
+      transmit(response, result.type, {
+        success: result.info.success,
+        message: result.info.message
       });
-
-      changeActive(false);
     }
   } catch (error) {
     transmit(response, 'error', {
@@ -82,8 +68,9 @@ async function sessionBotting(request: any, response: any) {
       message: 'SSE-соединение установлено'
     });
 
+    /*
     const interval = setInterval(() => {
-      if (!processor.checkActive()) {
+      if (false) {
         msg('process:botting', {
           type: 'system',
           success: true,
@@ -95,11 +82,9 @@ async function sessionBotting(request: any, response: any) {
         clearInterval(interval);
       }
     }, 2000);
+    */
 
-    request.on('close', () => {
-      del('process:botting');
-      clearInterval(interval);
-    });
+    request.on('close', () => del('process:botting'));
   } catch {
     del('process:botting');
   }
@@ -112,7 +97,7 @@ async function sessionGraphicActiveBots(request: any, response: any) {
     add('graphic:active-bots', response);
 
     const interval = setInterval(() => {
-      const activeBotsQuantity = activeBots.size;
+      const activeBotsQuantity = Object.keys(flow).length;
 
       msg('graphic:active-bots', {
         activeBotsQuantity: activeBotsQuantity
@@ -138,8 +123,9 @@ async function sessionGraphicAverageLoad(request: any, response: any) {
       let num = 0;
       let quantity = 0;
 
-      activeBots.forEach(bot => {
-        num += bot.profile.load;
+      Object.values(flow).forEach(e => {
+        const profile = e.profile;
+        num += profile ? profile.load : 0;
         quantity += 1;
       });
 
@@ -159,96 +145,6 @@ async function sessionGraphicAverageLoad(request: any, response: any) {
   }
 }
 
-async function executeScript(request: any, response: any) {
-  try {
-    const { script } = request.body;
-
-    await scripter.execute(script).then(() => {
-      transmit(response, 'info', {
-        success: true,
-        message: 'Скрипт успешно выполнен'
-      });
-    });
-  } catch (error) {
-    transmit(response, 'error', {
-      success: false,
-      message: error
-    });
-  }
-}
-
-async function stopScript(response: any) {
-  try {
-    await scripter.stop().then(() => {
-      transmit(response, 'info', {
-        success: true,
-        message: 'Скрипт остановлен'
-      });
-    });
-  } catch (error) {
-    transmit(response, 'error', {
-      success: false,
-      message: error
-    });
-  }
-}
-
-class Executor {
-  async startTerminalTool(request: any, response: any) {
-    try {
-      const { tool } = request.body;
-
-      const runnerPath = path.join(path.dirname(process.execPath), 'cli', 'runner.exe');
-
-      let toolPath = '';
-
-      if (tool === 'crasher') {
-        toolPath = path.join(path.dirname(process.execPath), 'cli', 'tools', 'crasher.exe');
-      }
-
-      exec(`cmd.exe /c start "" "${runnerPath}" "${toolPath}"`);
-    } catch (error) {
-      transmit(response, 'error', {
-        success: false,
-        message: error
-      });
-    }
-  }
-
-  async recreateBot(request: any, response: any) {
-    try {
-      const { nickname } = request.body;
-
-      activeBots.forEach(async bot => {
-        if (bot.nickname === nickname) {
-          const operation = await bot.recreate();
-
-          if (operation.success) {
-            transmit(response, 'info', {
-              success: true,
-              message: operation.message
-            });
-          } else {
-            transmit(response, 'error', {
-              success: false,
-              message: operation.message
-            });
-          }
-
-          response.end();
-        }
-      });
-    } catch (error) {
-      transmit(response, 'error', {
-        success: false,
-        message: error
-      });
-    }
-  }
-}
-
-const executor = new Executor();
-
 app.get('/salarixi/session/botting', async (req, res) => await sessionBotting(req, res));
 app.get('/salarixi/session/graphic/active-bots', async (req, res) => await sessionGraphicActiveBots(req, res));
 app.get('/salarixi/session/graphic/average-load', async (req, res) => await sessionGraphicAverageLoad(req, res));
@@ -260,18 +156,23 @@ app.post('/salarixi/system/data/clear', (_, res) => clear(res));
 app.post('/salarixi/botting/start', async (req, res) => await botting('start', req, res));
 app.post('/salarixi/botting/stop', async (_, res) => await botting('stop', null, res));
 
-app.post('/salarixi/control/chat', (req, res) => flow('chat', req.body, res));
-app.post('/salarixi/control/action', (req, res) => flow('action', req.body, res));
-app.post('/salarixi/control/move', (req, res) => flow('move', req.body, res));
-app.post('/salarixi/control/imitation', (req, res) => flow('imitation', req.body, res));
-app.post('/salarixi/control/attack', (req, res) => flow('attack', req.body, res));
-app.post('/salarixi/control/flight', (req, res) => flow('flight', req.body, res));
-app.post('/salarixi/control/sprinter', (req, res) => flow('sprinter', req.body, res));
-app.post('/salarixi/control/ghost', (req, res) => flow('ghost', req.body, res));
+app.post('/salarixi/control/chat', (req, res) => pool('chat', req.body, res));
+app.post('/salarixi/control/action', (req, res) => pool('action', req.body, res));
+app.post('/salarixi/control/move', (req, res) => pool('move', req.body, res));
+app.post('/salarixi/control/imitation', (req, res) => pool('imitation', req.body, res));
+app.post('/salarixi/control/attack', (req, res) => pool('attack', req.body, res));
+app.post('/salarixi/control/flight', (req, res) => pool('flight', req.body, res));
+app.post('/salarixi/control/sprinter', (req, res) => pool('sprinter', req.body, res));
+app.post('/salarixi/control/ghost', (req, res) => pool('ghost', req.body, res));
+app.post('/salarixi/control/spoofing', (req, res) => pool('spoofing', req.body, res));
 
-app.post('/salarixi/script/execute', async (req, res) => await executeScript(req, res));
-app.post('/salarixi/script/stop', async (_, res) => await stopScript(res));
+app.post('/salarixi/advanced/recreate', async (req, res) => {
+  const result = await manipulateBot('recreate', { username: req.body.username });
 
-app.post('/salarixi/terminal/tools/start', async (req, res) => await executor.startTerminalTool(req, res).then(() => res.end()));
-
-app.post('/salarixi/advanced/recreate', async (req, res) => await executor.recreateBot(req, res));
+  if (result) {
+    transmit(res, result.type, {
+      success: result.success,
+      message: result.message
+    });
+  }
+});

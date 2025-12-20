@@ -5,7 +5,6 @@ export function updateBotProfileData(data: any) {
   const password = data.profile.password;
   const proxyType = data.profile.proxyType.toUpperCase() || '─';
   const proxy = data.profile.proxy.split(':')[0] || '─';
-  const scriptActivity = data.profile.scriptActivity;
   const status = data.profile.status;
   const load = data.profile.load;
   const ping = data.profile.ping;
@@ -27,25 +26,26 @@ export function updateBotProfileData(data: any) {
     loadColor = '#ed1717ff';
   }
 
-  if (ping <= 60 && ping > 0) {
+  if (ping <= 60 && ping > 0) {   
     pingColor = '#22ed17ff';
   } else if (ping > 60 && ping <= 360) {
     pingColor = '#eddf17ff';
-  } else if (ping > 360 && ping <= 10000) {
+  } else if (ping > 350 && ping <= 500) {
+    pingColor = '#eb3c3cff';
+  } else if (ping > 500 && ping <= 10000) {
     pingColor = '#ed1717ff';
   } else {
     pingColor = '#8f8f8fff';
   }
 
   msg('monitoring:profile-data', {
-    nickname: data.nickname,
+    username: data.username,
     status: status.text,
     statusColor: status.color,
     version: version,
     password: password,
     proxyType: proxyType,
     proxy: proxy,
-    scriptActivity: scriptActivity,
     load: `${load}%`,
     loadColor: loadColor,
     ping: ping ? `${ping} мс` : '?',
@@ -55,7 +55,7 @@ export function updateBotProfileData(data: any) {
 
 export function updateBotChatHistory(data: any) {
   msg('monitoring:chat-history', {
-    nickname: data.nickname,
+    username: data.username,
     type: data.type,
     text: data.text
   });
