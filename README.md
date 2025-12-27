@@ -8,6 +8,9 @@ This client uses the [mineflayer](https://github.com/PrismarineJS/mineflayer) li
 
 📌 The official author of this client is **nullclyze**.
 
+> [!WARNING]
+> This client does not promise stability and good support on all operating systems. If you encounter any problems, please report them to the [issues](https://github.com/nullclyze/SalarixiOnion/issues).
+
 ## 🔗 Social
 
 - [Telegram](https://t.me/salarixionion) - Our official Telegram channel, where we publish client news and upcoming plans
@@ -87,3 +90,4 @@ The client has several large sections, they will be presented below in the table
 - **Latest Beta Release:** [Beta Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.3-beta)
 - **Latest Expert Release:** [Expert Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.3-expert)
 - **License:** [MIT License](./LICENSE)
+
