@@ -15,6 +15,7 @@ This client uses the [mineflayer](https://github.com/PrismarineJS/mineflayer) li
 
 - [Telegram](https://t.me/salarixionion) - Our official Telegram channel, where we publish client news and upcoming plans
 - [YouTube](https://www.youtube.com/@salarixionion) - Our official YouTube channel, where we publish video reviews of the client
+- [Discord](https://discord.gg/PwC3QUyht) - Our official Discord server, where we communicate and share ideas
 
 ## 💻 System Requirements
 
@@ -90,4 +91,5 @@ The client has several large sections, they will be presented below in the table
 - **Latest Beta Release:** [Beta Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.3-beta)
 - **Latest Expert Release:** [Expert Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.3-expert)
 - **License:** [MIT License](./LICENSE)
+
 
