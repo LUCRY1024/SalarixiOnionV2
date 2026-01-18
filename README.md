@@ -19,7 +19,7 @@ This client uses the [azalea-rs](https://github.com/azalea-rs/azalea) library as
 
 ## 💻 System Requirements
 
-- **Operating system:** Windows (10/11), Linux
+- **Operating system:** Windows, Linux
 - **Free disk space:** 60 MB
 - **RAM:** 4 GB
 - **Processor:** Average
