@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 
 build
 out
+
+node_modules
+dist
+dist-ssr
+*.local
