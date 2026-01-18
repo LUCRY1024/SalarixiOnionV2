@@ -89,11 +89,11 @@ The client has several large sections, they will be presented below in the table
 
 1. Download **.deb** file from GitHub
 2. Open directory with downloaded file in terminal
-3. Write ```sudo dpkg -i salarixionion.deb```
+3. Write ```sudo dpkg -i FILENAME.deb```
 4. Ready
 
 ## 📜 Additional Information
 
 - **Documentation:** [Docs](./docs/docs.md)
-- **Latest Release:** [Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.3-release)
+- **Latest Release:** [Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.4-release)
 - **License:** [MIT License](./LICENSE)
