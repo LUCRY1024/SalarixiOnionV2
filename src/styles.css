@@ -208,9 +208,9 @@
   z-index: 1000;
   border-radius: 8px;
   padding: 20px;
-  background: rgba(29, 29, 29, 0.3);
+  background: rgba(22, 22, 22, 0.7);
   border: 1px solid rgba(51,50,50,0.68);
-  backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(26px) saturate(120%);
   -webkit-backdrop-filter: blur(10px) saturate(120%); 
   box-shadow: 0 0 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
   flex-direction: column;
@@ -1516,15 +1516,14 @@ textarea::-webkit-resizer {
   margin: 8px 10px 0 10px;
   padding: 10px 0;
   font-size: 15px;
-  font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-weight: normal;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #f0f0f0;
   letter-spacing: 0.3px;
   text-align: center;
   border-radius: 4px;
   border: 1px solid rgba(53, 52, 52, 0.8);
-  background: linear-gradient(145deg, rgba(29, 28, 28, 0.8), rgba(25, 24, 24, 0.9));
-  background-color: rgba(29, 28, 28, 0.8);
+  background-color: rgba(25, 25, 25, 0.8);
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   outline: none;
@@ -1534,7 +1533,6 @@ textarea::-webkit-resizer {
 
 .bot-card .btn.spec:hover {
   border-color: rgba(80, 77, 77, 0.95);
-  background: linear-gradient(145deg, rgba(40, 39, 39, 0.9), rgba(35, 34, 34, 1));
 }
 
 .bot-card .btn.spec:active {
@@ -1542,12 +1540,12 @@ textarea::-webkit-resizer {
 }
 
 .bot-card .btn.spec.red {
-  color: rgb(255, 17, 17);
+  color: rgb(253, 11, 11);
 }
 
 .bot-card-head {
   display: flex;
-  background: #2b2a2a4d;
+  background-color: #1a1919;
   border-bottom: 1px solid #343434d6;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
@@ -1575,11 +1573,11 @@ textarea::-webkit-resizer {
 }
 
 .bot-nickname {
-  color: #d1cece;
+  color: #e2e2e2;
   font-size: 15px;
-  font-weight: bold;
+  font-weight: normal;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1;
-  letter-spacing: 0.1px;
   -webkit-user-select: text; 
   -moz-user-select: text;
   -ms-user-select: text;
@@ -1645,12 +1643,12 @@ textarea::-webkit-resizer {
 
 .monitoring-content {
   margin-top: 20px;
-  background-color: #1a1919e5;
+  background-color: transparent;
   max-height: 400px;
   height: 400px;
   overflow-y: auto;
   padding: 0;
-  border: 1px solid #3f3e3e;
+  border: 1px solid #252525;
   border-radius: 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;

@@ -117,16 +117,13 @@ async function startBots(): Promise<void> {
 
   log(String(result[1]), result[0]);
 
-  log('Включение мониторинга...', 'system');
-
   chartManager.enable();
 
   monitoringManager.maxChatHistoryLength = chatHistoryLength ? chatHistoryLength : 50;
-
   monitoringManager.enable();
   monitoringManager.wait();
 
-  log('Мониторинг включён', 'system');
+  radarManager.enable();
 }
 
 async function stopBots(): Promise<void> {
@@ -141,6 +138,7 @@ async function stopBots(): Promise<void> {
 
     chartManager.disable();
     monitoringManager.disable();
+    radarManager.disable();
 
     log('Мониторинг выключен', 'system');
   } catch (error) {
@@ -571,7 +569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const name = payload.name;
         const message = payload.message;
 
-        log(message, `log-${name}`);
+        log(message, name);
       } catch (error) {
         log(`Ошибка принятие log-события: ${error}`, 'error');
       }

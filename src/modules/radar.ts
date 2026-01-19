@@ -157,6 +157,14 @@ export class RadarManager {
     });
   }
 
+  public enable(): void {
+    this.active = true;
+  }
+
+  public disable(): void {
+    this.active = false;
+  }
+
   private initializeTargetCard(nickname: string): void {
     try {
       const openRouteBtn = document.getElementById(`radar-open-route-${nickname}`) as HTMLButtonElement;
