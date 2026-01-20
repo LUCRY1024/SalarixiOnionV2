@@ -161,7 +161,14 @@ pub struct LaunchOptions {
   pub humanoid_arm: String,
   pub use_auto_rejoin: bool,
   pub proxy_list: Option<String>,
-  pub use_proxy: bool
+  pub use_proxy: bool,
+  pub plugins: Plugins
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Plugins {
+  pub auto_armor: bool,
+  pub auto_totem: bool
 }
 
 // Структура FlowManager

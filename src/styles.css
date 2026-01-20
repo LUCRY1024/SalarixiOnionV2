@@ -56,16 +56,16 @@
 }
 
 .title-bar .title .name {
-  background-image: linear-gradient(90deg, rgb(148, 111, 250), rgb(103, 77, 253), rgb(46, 119, 202));
+  background-image: linear-gradient(90deg, rgb(160, 125, 255), rgb(110, 85, 255), rgb(33, 137, 255));
   color: transparent;
   background-clip: text;
 }
 
 .title-bar .title .version {
   margin-left: 8px;
-  background-image: linear-gradient(90deg, rgb(115, 114, 117), rgb(126, 125, 124), rgb(152, 153, 153));
-  color: transparent;
-  background-clip: text;
+  color: #8a8a8a;
+  font-size: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .title-bar .controls {
@@ -92,81 +92,6 @@
 .title-bar .controls button:hover {
   color: #fff;
   background-color: #57555525;
-}
-
-.loading-container {
-  position: fixed;
-  inset: 0; 
-  display: flex;
-  width: 1060px;
-  height: 100vh;
-  z-index: 9999;
-  background: rgba(24, 24, 24, 0.8);
-  border: none;
-  backdrop-filter: blur(10px);
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-.loading-container.hide {
-  animation: loading-hide 0.6s ease;
-}
-
-.loading-container .logo {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 30px;
-  border: 1px solid #2e2e2e;
-  border-radius: 14px;
-}
-
-.loading-container .loader {
-  display: flex;
-  width: 130px;
-  height: 4px;
-  border-radius: 30px;
-  background-color: rgb(15, 14, 14);
-  position: relative;
-}
-
-.loading-container .loader::before {
-  content: '';
-  position: absolute;
-  background: #6a5bf0;
-  top: 0;
-  left: 0;
-  width: 0%;
-  height: 100%;
-  border-radius: 30px;
-  animation: moving 1s ease-in-out infinite;
-}
-
-.loading-container .loading-text {
-  color: #c0b9ff;
-  animation: loading-text 3.5s ease both infinite;
-  font-size: 1rem;
-  letter-spacing: 1px;
-  font-family: Arial, Helvetica, sans-serif;
-  margin-top: 20px;
-}
-
-@keyframes moving {
-  50% {
-    width: 100%;
-  }
-
-  100% {
-    width: 0;
-    right: 0;
-    left: unset;
-  }
-}
-
-@keyframes loading-hide {
-  0% { opacity: 0.5; }
-  50% { opacity: 0.1; }
-  100% { opacity: 0; }
 }
 
 .left-panel {
@@ -1194,14 +1119,6 @@ p {
   transform: scale(1.1);
 }
 
-.footer {
-  font-family: var(--d-font-family);
-  text-align: center;
-  font-size: 0.9rem;
-  color: #aaa;
-  margin-top: 40px;
-}
-
 .checkbox-container {
   display: flex;
   align-items: center;
@@ -1980,4 +1897,166 @@ textarea::-webkit-resizer {
   margin-top: 10px;
   width: 100%;
   height: 500px;
+}
+
+.plugins-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  height: 550px;
+  max-height: 550px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.plugins-wrap .list {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  height: 500px;
+  max-height: 500px;
+  overflow: auto;
+}
+
+.plugins-wrap .list .plugin-card {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  height: 85px;
+  max-height: 85px;
+  width: 98%;
+  border: 1px solid #272727;
+  border-radius: 6px;
+}
+
+.plugins-wrap .list .plugin-card.unavailable .head .image {
+  color: #5c5c5c;
+}
+
+.plugins-wrap .list .plugin-card.unavailable .head .text .name {
+  color: #8d8d8d;
+}
+
+.plugins-wrap .list .plugin-card.unavailable .head .text .name .version {
+  color: #a1a1a1;
+  background-color: #3f3f3f1a;
+  border: 1px solid #4b4b4b50;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 3px;
+}
+
+.plugins-wrap .list .plugin-card.deprecated .head .text .name .tag {
+  color: #d3c017;
+  background-color: #3f3f3f1a;
+  border: 1px solid #4b4b4b50;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 3px;
+}
+
+.plugins-wrap .list .plugin-card .head {
+  display: flex;
+  align-items: center;
+  height: 85px;
+  max-height: 85px;
+  width: 380px;
+  min-width: 380px;
+  gap: 15px;
+  padding-left: 15px;
+}
+
+.plugins-wrap .list .plugin-card .head .image {
+  width: 55px;
+  height: 55px;
+  color: #a1a1a1;
+}
+
+.plugins-wrap .list .plugin-card .head .text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  justify-content: center;
+  align-items: start;
+  gap: 8px;
+}
+
+.plugins-wrap .list .plugin-card .head .text .name {
+  color: #c2c2c2;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.plugins-wrap .list .plugin-card .head .text .name .status {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  margin-left: 5px;
+  border-radius: 6px;
+  padding: 4px 6px;
+  background-color: #25252511;
+}
+
+.plugins-wrap .list .plugin-card .head .text .meta {
+  color: #9e9e9e;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.plugins-wrap .list .plugin-card .controls {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 85px;
+  max-height: 85px;
+  align-items: end;
+  justify-content: center;
+  padding-right: 10px;
+  gap: 8px;
+}
+
+.plugins-wrap .list .plugin-card .controls .button {
+  border: none;
+  background-color: #2e2e2e5d;
+  border-radius: 6px;
+  height: 28px;
+  width: 120px;
+  color: #c2c2c2;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.plugins-wrap .list .plugin-card .controls .button {
+  border: 1px solid transparent;
+  background: linear-gradient(90deg, #38373821, #44444428);
+  border-radius: 6px;
+  padding: 4px 8px;
+  height: 30px;
+  width: 120px;
+  color: #b6b6b6;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  transition: border 0.15s ease;
+}
+
+.plugins-wrap .list .plugin-card .controls .button:hover {
+  border-color: #50505079;
+}
+
+.plugins-wrap .list .plugin-card .controls .button:active {
+  border-color: #5050502f;
 }

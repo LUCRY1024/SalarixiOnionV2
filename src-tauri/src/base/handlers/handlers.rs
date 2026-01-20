@@ -5,14 +5,16 @@ use azalea::{ClientInformation, NoState};
 use tokio::time::sleep;
 use std::time::Duration;
 
+use crate::base::AutoTotemPlugin;
 use crate::tools::{randuint};
 use crate::state::{STATES, BotState};
 use crate::tasks::TASKS;
 use crate::base::get_flow_manager;
 use crate::base::generate_nickname_or_password;
 use crate::base::update_bots_count;
-use crate::extract_link_from_message;
 use crate::emit::*;
+use crate::extract_link_from_message;
+use crate::AutoArmorPlugin;
 
 
 // Swarm-обработчик
@@ -186,6 +188,21 @@ pub async fn single_handler(bot: Client, event: Event, _: NoState) -> anyhow::Re
         if let Some(state) = STATES.get(&nickname) {
           if state.read().unwrap().captcha_url.is_none() {
             STATES.set(&nickname, "captcha_url", link);
+          }
+        }
+      }
+    },
+    Event::Tick => {
+      if let Some(arc) = get_flow_manager() {
+        let fm = arc.write();
+
+        if let Some(opts) = fm.options.clone() {
+          if opts.plugins.auto_armor {
+            AutoArmorPlugin::equip_armor(bot.clone());
+          }
+
+          if opts.plugins.auto_totem {
+            AutoTotemPlugin::take_totem(bot.clone());
           }
         }
       }

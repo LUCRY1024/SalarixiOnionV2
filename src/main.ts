@@ -24,7 +24,7 @@ const chartManager = new ChartManager();
 const monitoringManager = new MonitoringManager();
 const radarManager = new RadarManager();
 
-const pressedKeys: { [key: string]: boolean } = {
+const pressedKeys: { [x: string]: boolean } = {
   alt: false,
   shift: false,
   f: false,
@@ -44,6 +44,17 @@ const pressedKeys: { [key: string]: boolean } = {
   r: false,
   t: false,
   z: false
+};
+
+const plugins: { [x: string]: { enable: boolean, settings: any } } = {
+  'auto-armor': {
+    enable: false,
+    settings: {}
+  },
+  'auto-totem': {
+    enable: false,
+    settings: {}
+  }
 };
 
 let globalContainers: Array<{ id: string; el: HTMLElement }> = [];
@@ -112,7 +123,11 @@ async function startBots(): Promise<void> {
     use_auto_rejoin: useAutoRejoin,
     use_auto_login: useAutoLogin,
     use_proxy: useProxy,
-    proxy_list: proxyList
+    proxy_list: proxyList,
+    plugins: {
+      auto_armor: plugins['auto-armor'].enable,
+      auto_totem: plugins['auto-totem'].enable
+    }
   }}) as Array<string>;
 
   log(String(result[1]), result[0]);
@@ -193,7 +208,49 @@ class ElementManager {
       });
     });
 
-    document.querySelectorAll('[toggler="true"]').forEach(e => e.addEventListener('click', async () => { 
+    document.querySelectorAll('[plugin-toggler="true"]').forEach(e => e.addEventListener('click', () => {
+      const pluginName = e.getAttribute('plugin-name');
+      const state = e.getAttribute('state') === 'true';
+
+      if (pluginName) {
+        plugins[pluginName].enable = state;
+
+        const status = document.getElementById(`${pluginName}-status`) as HTMLElement;
+        const button = document.getElementById(`${pluginName}-toggler`) as HTMLButtonElement;
+
+        if (state) {
+          status.innerText = 'Включен';
+
+          button.setAttribute('state', 'false');
+          button.innerText = 'Выключить';
+        } else {
+          status.innerText = 'Выключен';
+
+          button.setAttribute('state', 'true');
+          button.innerText = 'Включить';
+        }
+      }
+    }));  
+
+    document.querySelectorAll('[plugin-open-settings="true"]').forEach(e => e.addEventListener('click', () => {
+      const path = e.getAttribute('path');
+
+      if (path) {
+        const container = document.getElementById(path) as HTMLElement;
+        container.style.display = 'flex';
+      }
+    })); 
+
+    document.querySelectorAll('[plugin-close-settings="true"]').forEach(e => e.addEventListener('click', () => {
+      const path = e.getAttribute('path');
+
+      if (path) {
+        const container = document.getElementById(path) as HTMLElement;
+        container.style.display = 'none';
+      }
+    })); 
+
+    document.querySelectorAll('[control-toggler="true"]').forEach(e => e.addEventListener('click', async () => { 
       let state: boolean | string = false;
 
       let attribute = e.getAttribute('state');
@@ -598,17 +655,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await monitoringManager.init();
 
     log('Инициализация прошла успешно', 'extended');
-
-    const loadingContainer = document.getElementById('loading-container');
-
-    if (loadingContainer) {
-      setTimeout(() => {
-        loadingContainer.classList.add('hide');
-        setTimeout(() => {
-          loadingContainer.style.display = 'none';
-        }, 590);
-      }, 1500);
-    }
 
     await checkUpdate();
   } catch (error) {

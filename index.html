@@ -24,14 +24,6 @@
     </div>
   </div>
 
-  <div class="loading-container" id="loading-container">
-    <img class="logo" src="./src/assets/logo.png" draggable="false">
-
-    <div class="loader"></div>
-
-    <label class="loading-text">Загрузка</label>
-  </div>
-
   <div class="notice-wrap" id="notice" style="display: none;">
     <div class="notice" role="dialog" aria-labelledby="update-title" aria-describedby="update-info">
       <button class="close-notice-btn" aria-label="Закрыть" id="close-notice-btn">✕</button>
@@ -78,6 +70,13 @@
       <span class="text">Настройки</span>
     </button>
 
+    <button class="panel-btn" id="plugins" path="plugins-container">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plugin" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M1 8a7 7 0 1 1 2.898 5.673c-.167-.121-.216-.406-.002-.62l1.8-1.8a3.5 3.5 0 0 0 4.572-.328l1.414-1.415a.5.5 0 0 0 0-.707l-.707-.707 1.559-1.563a.5.5 0 1 0-.708-.706l-1.559 1.562-1.414-1.414 1.56-1.562a.5.5 0 1 0-.707-.706l-1.56 1.56-.707-.706a.5.5 0 0 0-.707 0L5.318 5.975a3.5 3.5 0 0 0-.328 4.571l-1.8 1.8c-.58.58-.62 1.6.121 2.137A8 8 0 1 0 0 8a.5.5 0 0 0 1 0"/>
+      </svg>
+      <span class="text">Плагины</span>
+    </button>
+
     <button class="panel-btn" id="proxy" path="proxy-container">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="2" y="2" width="20" height="8" rx="2"/>
@@ -91,6 +90,8 @@
       </svg>
       <span class="text">Прокси</span>
     </button>
+
+    <div class="separator"></div>
 
     <button class="panel-btn" id="control" path="control-container">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-controller" viewBox="0 0 16 16">
@@ -533,6 +534,74 @@
       </div>
     </div>
 
+    <div class="form-container" id="plugins-container" style="display: none;" global="true">
+      <h1 class="title">Плагины</h1>
+
+      <div class="plugins-wrap">
+        <div class="list">
+          <div class="plugin-card">
+            <div class="head">
+              <svg class="image" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1 8a7 7 0 1 1 2.898 5.673c-.167-.121-.216-.406-.002-.62l1.8-1.8a3.5 3.5 0 0 0 4.572-.328l1.414-1.415a.5.5 0 0 0 0-.707l-.707-.707 1.559-1.563a.5.5 0 1 0-.708-.706l-1.559 1.562-1.414-1.414 1.56-1.562a.5.5 0 1 0-.707-.706l-1.56 1.56-.707-.706a.5.5 0 0 0-.707 0L5.318 5.975a3.5 3.5 0 0 0-.328 4.571l-1.8 1.8c-.58.58-.62 1.6.121 2.137A8 8 0 1 0 0 8a.5.5 0 0 0 1 0"/>
+              </svg>
+
+              <div class="text">
+                <div class="name">Авто Доспехи</div>
+                <div class="meta">Статус: <span class="status" id="auto-armor-status">Выключен</span></div>
+              </div>
+            </div>
+
+            <div class="controls">
+              <button class="button" plugin-toggler="true" plugin-name="auto-armor" state="true" id="auto-armor-toggler">Включить</button>
+              <button class="button" plugin-open-settings="true" path="auto-armor-plugin-settings">Настроить</button>
+            </div>
+          </div>
+
+          <div class="plugin-card">
+            <div class="head">
+              <svg class="image" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1 8a7 7 0 1 1 2.898 5.673c-.167-.121-.216-.406-.002-.62l1.8-1.8a3.5 3.5 0 0 0 4.572-.328l1.414-1.415a.5.5 0 0 0 0-.707l-.707-.707 1.559-1.563a.5.5 0 1 0-.708-.706l-1.559 1.562-1.414-1.414 1.56-1.562a.5.5 0 1 0-.707-.706l-1.56 1.56-.707-.706a.5.5 0 0 0-.707 0L5.318 5.975a3.5 3.5 0 0 0-.328 4.571l-1.8 1.8c-.58.58-.62 1.6.121 2.137A8 8 0 1 0 0 8a.5.5 0 0 0 1 0"/>
+              </svg>
+
+              <div class="text">
+                <div class="name">Авто Тотем</div>
+                <div class="meta">Статус: <span class="status" id="auto-totem-status">Выключен</span></div>
+              </div>
+            </div>
+
+            <div class="controls">
+              <button class="button" plugin-toggler="true" plugin-name="auto-totem" state="true" id="auto-totem-toggler">Включить</button>
+              <button class="button" plugin-open-settings="true" path="auto-totem-plugin-settings">Настроить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cover" id="auto-armor-plugin-settings">
+        <div class="panel">
+          <div class="right">
+            <button class="btn min pretty" plugin-close-settings="true" path="auto-armor-plugin-settings">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cover" id="auto-totem-plugin-settings">
+        <div class="panel">
+          <div class="right">
+            <button class="btn min pretty" plugin-close-settings="true" path="auto-totem-plugin-settings">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="form-container" id="control-container" style="display: none;" global="true">
       <div class="button-card">
         <div class="button-list">
@@ -654,12 +723,12 @@
 
               <div class="btn-group-flex" style="margin-top: 25px;">
                 <div class="btn-group-flex" id="chat-default-btns-container">
-                  <button class="btn green toggler" toggler="true" name="chat" state="true">Отправить</button>
+                  <button class="btn green toggler" control-toggler="true" name="chat" state="true">Отправить</button>
                 </div>
 
                 <div class="btn-group-flex" id="chat-spamming-btns-container" style="display: none;">
-                  <button class="btn green toggler" toggler="true" name="chat" state="true">Старт</button>
-                  <button class="btn red toggler" toggler="true" name="chat" state="false">Стоп</button>
+                  <button class="btn green toggler" control-toggler="true" name="chat" state="true">Старт</button>
+                  <button class="btn red toggler" control-toggler="true" name="chat" state="false">Стоп</button>
                 </div>
               </div>
             </div>
@@ -721,8 +790,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="action" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="action" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="action" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="action" state="false">Стоп</button>
               </div>
             </div>
 
@@ -776,19 +845,19 @@
 
               <div id="inventory-basic-btn-container" style="flex-direction: column;">
                 <div class="btn-group-flex" style="margin-top: 25px;">
-                  <button class="btn green toggler" toggler="true" name="inventory" state="select">Выбрать</button>
-                  <button class="btn red toggler" toggler="true" name="inventory" state="drop">Выбросить</button>
+                  <button class="btn green toggler" control-toggler="true" name="inventory" state="select">Выбрать</button>
+                  <button class="btn red toggler" control-toggler="true" name="inventory" state="drop">Выбросить</button>
                 </div>
 
                 <div class="btn-group-flex">
-                  <button class="btn toggler" toggler="true" name="inventory" state="left-click">Клик (ЛКМ)</button>
-                  <button class="btn toggler" toggler="true" name="inventory" state="right-click">Клик (ПКМ)</button>
+                  <button class="btn toggler" control-toggler="true" name="inventory" state="left-click">Клик (ЛКМ)</button>
+                  <button class="btn toggler" control-toggler="true" name="inventory" state="right-click">Клик (ПКМ)</button>
                 </div>
               </div>
 
               <div id="inventory-swap-btn-container" style="display: none;">
                 <div class="btn-group-flex" style="margin-top: 25px;">
-                  <button class="btn green toggler" toggler="true" name="inventory" state="swap">Переместить</button>
+                  <button class="btn green toggler" control-toggler="true" name="inventory" state="swap">Переместить</button>
                 </div>
               </div>
             </div>
@@ -835,8 +904,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="movement" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="movement" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="movement" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="movement" state="false">Стоп</button>
               </div>
             </div>
 
@@ -888,8 +957,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="anti-afk" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="anti-afk" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="anti-afk" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="anti-afk" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -960,8 +1029,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="flight" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="flight" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="flight" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="flight" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1004,8 +1073,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="killaura" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="killaura" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="killaura" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="killaura" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1043,8 +1112,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="scaffold" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="scaffold" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="scaffold" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="scaffold" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1083,8 +1152,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="anti-fall" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="anti-fall" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="anti-fall" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="anti-fall" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1123,8 +1192,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="bow-aim" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="bow-aim" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="bow-aim" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="bow-aim" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1157,8 +1226,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="stealer" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="stealer" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="stealer" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="stealer" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1210,8 +1279,8 @@
               </div>
 
               <div class="btn-group-flex" style="margin-top: 25px;">
-                <button class="btn green toggler" toggler="true" name="miner" state="true">Старт</button>
-                <button class="btn red toggler" toggler="true" name="miner" state="false">Стоп</button>
+                <button class="btn green toggler" control-toggler="true" name="miner" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="miner" state="false">Стоп</button>
               </div>
             </div>
           </div>
@@ -1433,10 +1502,6 @@
             <path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.01 2.01 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.01 2.01 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31 31 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.01 2.01 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A100 100 0 0 1 7.858 2zM6.4 5.209v4.818l4.157-2.408z"/>
           </svg>
         </a>
-      </div>
-      
-      <div class="footer">
-        © 2025 Salarixi Onion | Все права защищены
       </div>
     </div>
   </div>
