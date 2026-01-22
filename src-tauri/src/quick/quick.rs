@@ -9,11 +9,13 @@ use azalea::pathfinder::moves;
 use azalea::entity::Physics;
 use azalea::interact::SwingArmEvent;
 use azalea::core::position::BlockPos;
-use core::time;
 use std::f32::consts::PI; 
+use core::time::Duration;
+use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
 use crate::tools::{randfloat, randuint};
+use crate::common::get_average_coordinates_of_bots;
 
 
 // Структура QuickTaskManager
@@ -45,7 +47,7 @@ impl QuickTaskManager {
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.walk(azalea::WalkDirection::Forward);
-                tokio::time::sleep(time::Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 bot.walk(azalea::WalkDirection::None);
               });
             }
@@ -54,7 +56,7 @@ impl QuickTaskManager {
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.walk(azalea::WalkDirection::Backward);
-                tokio::time::sleep(time::Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 bot.walk(azalea::WalkDirection::None);
               });
             }
@@ -63,7 +65,7 @@ impl QuickTaskManager {
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.walk(azalea::WalkDirection::Left);
-                tokio::time::sleep(time::Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 bot.walk(azalea::WalkDirection::None);
               });
             }
@@ -72,7 +74,7 @@ impl QuickTaskManager {
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.walk(azalea::WalkDirection::Right);
-                tokio::time::sleep(time::Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 bot.walk(azalea::WalkDirection::None);
               });
             }
@@ -86,7 +88,7 @@ impl QuickTaskManager {
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.set_crouching(true);
-                tokio::time::sleep(time::Duration::from_millis(200)).await;
+                sleep(Duration::from_millis(200)).await;
                 bot.set_crouching(false);
               });
             }
@@ -186,15 +188,15 @@ impl QuickTaskManager {
               positions.push(bot.position());
             }
 
-            let average_cords = Self::get_average_coordinates(positions);
+            let average_cords = get_average_coordinates_of_bots(positions);
 
             for bot in fm.bots.clone().into_values() {
               tokio::task::spawn(async move {
                 bot.start_goto_with_opts(
                   XZGoal { x: average_cords.0 as i32, z: average_cords.2 as i32 },  
                   PathfinderOpts::new()  
-                    .min_timeout(PathfinderTimeout::Time(time::Duration::from_millis(300)))  
-                    .max_timeout(PathfinderTimeout::Time(time::Duration::from_millis(1000)))  
+                    .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
+                    .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
                     .allow_mining(false)  
                     .successors_fn(moves::basic::basic_move)  
                 );
@@ -221,7 +223,7 @@ impl QuickTaskManager {
               bots.push(bot);
             }
 
-            let average_cords = Self::get_average_coordinates(positions);
+            let average_cords = get_average_coordinates_of_bots(positions);
             
             for (i, bot) in bots.iter().enumerate() {  
               let angle = 2.0 * PI * (i as f32) / (bots.len() as f32);  
@@ -231,8 +233,8 @@ impl QuickTaskManager {
               bot.start_goto_with_opts(
                 XZGoal { x: x as i32, z: z as i32 },  
                 PathfinderOpts::new()  
-                  .min_timeout(PathfinderTimeout::Time(time::Duration::from_millis(300)))  
-                  .max_timeout(PathfinderTimeout::Time(time::Duration::from_millis(1000)))  
+                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
+                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
                   .allow_mining(false)  
                   .successors_fn(moves::basic::basic_move) 
               );
@@ -247,7 +249,7 @@ impl QuickTaskManager {
               bots.push(bot);
             }
 
-            let average_cords = Self::get_average_coordinates(positions);
+            let average_cords = get_average_coordinates_of_bots(positions);
 
             for (i, bot) in bots.iter().enumerate() {  
               let x = average_cords.0 + 1.0 * (i as f64 * 1.0);  
@@ -256,8 +258,8 @@ impl QuickTaskManager {
               bot.start_goto_with_opts(
                 XZGoal { x: x as i32, z: z as i32 },  
                 PathfinderOpts::new()  
-                  .min_timeout(PathfinderTimeout::Time(time::Duration::from_millis(300)))  
-                  .max_timeout(PathfinderTimeout::Time(time::Duration::from_millis(1000)))  
+                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
+                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
                   .allow_mining(false)  
                   .successors_fn(moves::basic::basic_move)  
               );
@@ -272,39 +274,5 @@ impl QuickTaskManager {
         }
       }
     }
-  }
-
-  fn get_average_coordinates(positions: Vec<Vec3>) -> (f64, f64, f64) {
-    let mut x_coords = vec![];
-    let mut y_coords = vec![];
-    let mut z_coords = vec![];
-
-    for pos in positions {
-      x_coords.push(pos.x);
-      y_coords.push(pos.x);
-      z_coords.push(pos.z);
-    }
-
-    let mut x_global = 0.0;
-    let mut y_global = 0.0;
-    let mut z_global = 0.0;
-
-    for coordinate in x_coords.clone().into_iter() {
-      x_global = x_global + coordinate;
-    }
-
-    for coordinate in y_coords.clone().into_iter() {
-      y_global = y_global + coordinate;
-    }
-
-    for coordinate in z_coords.clone().into_iter() {
-      z_global = z_global + coordinate;
-    }
-
-    let x_average = x_global / x_coords.len() as f64;
-    let y_average = y_global / y_coords.len() as f64;
-    let z_average = z_global / z_coords.len() as f64;
-
-    (x_average, y_average, z_average)
   }
 }

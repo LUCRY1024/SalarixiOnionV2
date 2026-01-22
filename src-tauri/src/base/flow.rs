@@ -168,7 +168,8 @@ pub struct LaunchOptions {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Plugins {
   pub auto_armor: bool,
-  pub auto_totem: bool
+  pub auto_totem: bool,
+  pub auto_eat: bool
 }
 
 // Структура FlowManager
@@ -292,9 +293,11 @@ impl FlowManager {
               flow = flow.add_account_with_opts(account, opts);  
             } 
           } else {
-            flow = flow
-              .add_plugins(ViaVersionPlugin::start(options.version).await)
-              .add_accounts(accounts);
+            for account in accounts {  
+              flow = flow.add_account(account);  
+            } 
+
+            flow = flow.add_plugins(ViaVersionPlugin::start(options.version).await)
           }
 
           emit_event(EventType::Log(LogEventPayload { 
