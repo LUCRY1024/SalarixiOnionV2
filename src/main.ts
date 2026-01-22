@@ -54,6 +54,10 @@ const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-totem': {
     enable: false,
     date: '21.01.2026'
+  },
+  'auto-eat': {
+    enable: false,
+    date: '21.01.2026'
   }
 };
 
@@ -126,7 +130,8 @@ async function startBots(): Promise<void> {
     proxy_list: proxyList,
     plugins: {
       auto_armor: plugins['auto-armor'].enable,
-      auto_totem: plugins['auto-totem'].enable
+      auto_totem: plugins['auto-totem'].enable,
+      auto_eat: plugins['auto-eat'].enable
     }
   }}) as Array<string>;
 

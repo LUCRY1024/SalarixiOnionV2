@@ -5,16 +5,15 @@ use azalea::{ClientInformation, NoState};
 use tokio::time::sleep;
 use std::time::Duration;
 
-use crate::base::AutoTotemPlugin;
 use crate::tools::{randuint};
 use crate::state::{STATES, BotState};
 use crate::tasks::TASKS;
 use crate::base::get_flow_manager;
 use crate::base::generate_nickname_or_password;
 use crate::base::update_bots_count;
+use crate::base::{AutoArmorPlugin, AutoTotemPlugin, AutoEatPlugin};
 use crate::emit::*;
 use crate::extract_link_from_message;
-use crate::AutoArmorPlugin;
 
 
 // Swarm-обработчик
@@ -24,7 +23,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, _state: NoSwarmState
       if let Some(arc) = get_flow_manager() {
         let mut fm = arc.write();
 
-        fm.swarm = Some(swarm);
+        fm.swarm = Some(swarm.clone());
       }
     },
     _ => {}
@@ -32,7 +31,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, _state: NoSwarmState
 }
 
 // Single-обработчик
-pub async fn single_handler(bot: Client, event: Event, _: NoState) -> anyhow::Result<()> {
+pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyhow::Result<()> {
   match event {
     Event::Login => {
       let nickname = bot.username();
@@ -70,6 +69,22 @@ pub async fn single_handler(bot: Client, event: Event, _: NoState) -> anyhow::Re
       }
     },
     Event::Spawn => {
+      if let Some(arc) = get_flow_manager() {
+        if let Some(options) = arc.read().options.clone() {
+          if options.plugins.auto_armor {
+            AutoArmorPlugin::enable(bot.clone());
+          }
+
+          if options.plugins.auto_totem {
+            AutoTotemPlugin::enable(bot.clone());
+          }
+
+          if options.plugins.auto_eat {
+            AutoEatPlugin::enable(bot.clone());
+          }
+        }
+      }
+
       let nickname = bot.username();
 
       update_bots_count('+');
@@ -193,18 +208,14 @@ pub async fn single_handler(bot: Client, event: Event, _: NoState) -> anyhow::Re
       }
     },
     Event::Tick => {
-      if let Some(arc) = get_flow_manager() {
-        let fm = arc.write();
+      let nickname = bot.username();
 
-        if let Some(opts) = fm.options.clone() {
-          if opts.plugins.auto_armor {
-            AutoArmorPlugin::equip_armor(bot.clone());
-          }
+      if let Some(_) = STATES.get(&nickname) {
+        let health = bot.health() as u32;
+        let satiety = bot.hunger().food;
 
-          if opts.plugins.auto_totem {
-            AutoTotemPlugin::take_totem(bot.clone());
-          }
-        }
+        STATES.set(&nickname, "health", health.to_string());
+        STATES.set(&nickname, "satiety", satiety.to_string());
       }
     },
     _ => {}
