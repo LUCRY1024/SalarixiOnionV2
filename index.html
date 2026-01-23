@@ -1106,6 +1106,14 @@
                 </div>
 
                 <div class="custom-select between">
+                  <label>Настройки: </label>
+                  <select id="select-killaura-settings" control="killaura" name="settings">
+                    <option value="adaptive">Адаптивные</option>
+                    <option value="manual">Ручные</option>
+                  </select>
+                </div>
+
+                <div class="custom-select between">
                   <label>Цель: </label>
                   <select control="killaura" name="target">
                     <option value="player">Игрок</option>
@@ -1116,14 +1124,21 @@
               </div>
 
               <div class="input-wrap">
-                <div class="form-input">
-                  <label for="killaura-distance" class="text">Дистанция атаки</label>
-                  <input type="number" control="killaura" id="killaura-distance" placeholder="3.1" value="3.1" name="distance">
-                </div>
+                <div class="hidden-wrapper input" id="killaura-manual-settings-container">
+                  <div class="form-input">
+                    <label for="killaura-slot" class="text">Слот с оружием</label>
+                    <input type="number" control="killaura" id="killaura-slot" placeholder="0" value="0" name="slot">
+                  </div>
 
-                <div class="form-input">
-                  <label for="killaura-delay" class="text">Задержка в тиках</label>
-                  <input type="number" control="killaura" id="killaura-delay" placeholder="1" value="1" name="delay">
+                  <div class="form-input">
+                    <label for="killaura-distance" class="text">Дистанция атаки</label>
+                    <input type="number" control="killaura" id="killaura-distance" placeholder="3.1" value="3.1" name="distance">
+                  </div>
+
+                  <div class="form-input">
+                    <label for="killaura-delay" class="text">Задержка в тиках</label>
+                    <input type="number" control="killaura" id="killaura-delay" placeholder="1" value="1" name="delay">
+                  </div>
                 </div>
               </div>
 

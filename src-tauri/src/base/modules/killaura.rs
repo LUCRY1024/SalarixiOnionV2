@@ -13,7 +13,7 @@ use crate::common::convert_inventory_slot_to_hotbar_slot;
 
 #[derive(Debug)]
 struct Weapon {
-  slot: Option<u8>,
+  slot: Option<usize>,
   priority: u8
 }
 
@@ -23,14 +23,33 @@ pub struct KillauraModule;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KillauraOptions {
   pub mode: String,
+  pub settings: String,
   pub target: String,
+  pub slot: Option<u8>,
   pub distance: Option<f64>,
   pub delay: Option<usize>,
   pub state: bool
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct KillauraConfig {
+  target: String,
+  slot: Option<u8>,
+  distance: f64,
+  delay: usize
+}
+
 impl KillauraModule {
-  fn find_nearest_entity(bot: &Client, target: String, distance: Option<f64>) -> Option<Entity> {
+  fn create_adaptive_config(target: String) -> KillauraConfig {
+    KillauraConfig {
+      target: target,
+      slot: None,
+      distance: 3.1,
+      delay: 1
+    }
+  }
+
+  fn find_nearest_entity(bot: &Client, target: String, distance: f64) -> Option<Entity> {
     let mut nearest_entity = None;
 
     let bot_position = bot.eye_position();
@@ -38,17 +57,17 @@ impl KillauraModule {
     match target.as_str() {
       "player" => { 
         nearest_entity = bot.nearest_entity_by::<&Position, (With<Player>, Without<LocalEntity>, Without<Dead>)>(|position: &Position| {
-          bot_position.distance_to(**position) <= distance.unwrap_or(3.1)
+          bot_position.distance_to(**position) <= distance
         });
       },
       "monster" => {
         nearest_entity = bot.nearest_entity_by::<&Position, (With<AbstractMonster>, Without<LocalEntity>, Without<Dead>)>(|position: &Position| {
-          bot_position.distance_to(**position) <= distance.unwrap_or(3.1)
+          bot_position.distance_to(**position) <= distance
         });
       },
       "animal" => {
         nearest_entity = bot.nearest_entity_by::<&Position, (With<AbstractAnimal>, Without<LocalEntity>, Without<Dead>)>(|position: &Position| {
-          bot_position.distance_to(**position) <= distance.unwrap_or(3.1)
+          bot_position.distance_to(**position) <= distance
         });
       },
       _ => {}
@@ -64,24 +83,24 @@ impl KillauraModule {
     Vec3::new(pos.x, pos.y, pos.z)
   }
 
-  fn auto_weapon(bot: &Client) {
+  async fn auto_weapon(bot: &Client) {
     let mut weapons = vec![];
 
-    if let Some(inventory) = bot.open_inventory() {
-      if let Some(menu) = inventory.menu() {
-        for slot in menu.hotbar_slots_range() {
-          if let Some(item) = menu.slot(slot) {
-            if !item.is_empty() {
-              match item.kind() {
-                ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 0 }); },
-                ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 1 }); },
-                ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 2 }); },
-                ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 3 }); },
-                ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 4 }); },
-                ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 5 }); },
-                ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot as u8), priority: 6 }); },
-                _ => {}
-              }
+    let menu = bot.menu();
+
+    for slot in menu.hotbar_slots_range() {
+      if slot > 9 {
+        if let Some(item) = menu.slot(slot) {
+          if !item.is_empty() {
+            match item.kind() {
+              ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot), priority: 0 }); },
+              ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot), priority: 1 }); },
+              ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot), priority: 2 }); },
+              ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot), priority: 3 }); },
+              ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot), priority: 4 }); },
+              ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot), priority: 5 }); },
+              ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot), priority: 6 }); },
+              _ => {}
             }
           }
         }
@@ -97,19 +116,40 @@ impl KillauraModule {
     }
 
     if let Some(slot) = best_weapon.slot {
-      if bot.selected_hotbar_slot() != slot {
-        if let Some(s) = convert_inventory_slot_to_hotbar_slot(slot as u16) {
-          bot.set_selected_hotbar_slot(s);
+      if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot as u16) {
+        if bot.selected_hotbar_slot() != hotbar_slot {
+          bot.set_selected_hotbar_slot(hotbar_slot);
         }
       }
     }
   }
 
   async fn moderate_killaura(bot: &Client, options: KillauraOptions) {
-    loop {
-      Self::auto_weapon(bot);
+    let config = if options.settings.as_str() == "adaptive" {
+      Self::create_adaptive_config(options.target.clone())
+    } else {
+      KillauraConfig { 
+        target: options.target.clone(), 
+        slot: options.slot, 
+        distance: options.distance.unwrap_or(3.1), 
+        delay: options.delay.unwrap_or(1)
+      }
+    };
 
-      let nearest_entity = Self::find_nearest_entity(bot, options.target.clone(), options.distance);
+    loop {
+      if options.settings.as_str() == "adaptive" {
+        Self::auto_weapon(bot).await;
+      } else {
+        if let Some(slot) = config.slot {
+          if slot <= 8 {
+            bot.set_selected_hotbar_slot(slot);
+          }
+        } else {
+          Self::auto_weapon(bot).await;
+        }
+      }
+
+      let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
 
       if let Some(entity) = nearest_entity {
         if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
@@ -123,15 +163,36 @@ impl KillauraModule {
         }
       }
 
-      bot.wait_ticks(options.delay.unwrap_or(1)).await;
+      bot.wait_ticks(config.delay).await;
     }
   }
 
   async fn aggressive_killaura(bot: &Client, options: KillauraOptions) {
-    loop {
-      Self::auto_weapon(bot);
+    let config = if options.settings.as_str() == "adaptive" {
+      Self::create_adaptive_config(options.target.clone())
+    } else {
+      KillauraConfig { 
+        target: options.target.clone(), 
+        slot: options.slot, 
+        distance: options.distance.unwrap_or(3.1), 
+        delay: options.delay.unwrap_or(1)
+      }
+    };
 
-      let nearest_entity = Self::find_nearest_entity(bot, options.target.clone(), options.distance);
+    loop {
+      if options.settings.as_str() == "adaptive" {
+        Self::auto_weapon(bot).await;
+      } else {
+        if let Some(slot) = config.slot {
+          if slot <= 8 {
+            bot.set_selected_hotbar_slot(slot);
+          }
+        } else {
+          Self::auto_weapon(bot).await;
+        }
+      }
+
+      let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
 
       if let Some(entity) = nearest_entity {
         if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
@@ -144,7 +205,7 @@ impl KillauraModule {
         }
       }
 
-      bot.wait_ticks(options.delay.unwrap_or(1)).await;
+      bot.wait_ticks(config.delay).await;
     }
   }
 
