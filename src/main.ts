@@ -49,15 +49,15 @@ const pressedKeys: { [x: string]: boolean } = {
 const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
     enable: false,
-    date: '21.01.2026'
+    date: '23.01.2026'
   },
   'auto-totem': {
     enable: false,
-    date: '21.01.2026'
+    date: '23.01.2026'
   },
   'auto-eat': {
     enable: false,
-    date: '21.01.2026'
+    date: '23.01.2026'
   }
 };
 
