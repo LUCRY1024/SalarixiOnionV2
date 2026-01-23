@@ -97,6 +97,7 @@ The client has several large sections, they will be presented below in the table
 4. Ready
 
 ### Windows (EXE)
+
 1. Download **.exe** file from GitHub
 2. Run downloaded file
 3. Ready
@@ -121,3 +122,7 @@ The client has several large sections, they will be presented below in the table
 - **FAQ:** [FAQ](./docs/FAQ.md)
 - **Latest Release:** [Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.5-release)
 - **License:** [MIT License](./LICENSE)
+
+## 💸 Donate
+
+Liked the project? Support us: 5599002129447795
