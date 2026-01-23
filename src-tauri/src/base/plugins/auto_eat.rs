@@ -142,7 +142,7 @@ impl AutoEatPlugin {
       if desired_health_priority > desired_hunger_priority {
         current_priority = desired_health_priority;
       } else {
-        current_priority = (desired_health_priority + desired_hunger_priority) / 2
+        current_priority = (desired_health_priority + desired_hunger_priority) / 2;
       }
 
       for attempt in 0..3 {

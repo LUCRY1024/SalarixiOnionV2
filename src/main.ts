@@ -14,7 +14,7 @@ import { RadarManager } from './modules/radar';
 Chart.register(...registerables);
 
 const client = {
-  version: '1.0.4'
+  version: '1.0.5'
 };
 
 let process: 'active' | 'sleep' = 'sleep';

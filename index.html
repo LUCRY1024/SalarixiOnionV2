@@ -791,7 +791,7 @@
             <div class="wrap right">
               <div class="checkbox-group">
                 <label class="checkbox-container">
-                  <input type="checkbox" control="chat" id="use-chat-sync" name="use_sync" checked>
+                  <input type="checkbox" control="chat" name="use_sync" checked>
                   <span class="checkmark"></span>
                   Синхронность
                 </label>
@@ -799,13 +799,21 @@
                 <div class="simple-sep"></div>
 
                 <label class="checkbox-container">
-                  <input type="checkbox" control="chat" id="use-chat-text-mutation" name="use_text_mutation" checked>
+                  <input type="checkbox" control="chat" name="use_global_chat">
+                  <span class="checkmark"></span>
+                  Глобальный чат
+                </label>
+
+                <div class="simple-sep"></div>
+
+                <label class="checkbox-container">
+                  <input type="checkbox" control="chat" name="use_text_mutation" checked>
                   <span class="checkmark"></span>
                   Мутация текста
                 </label>
 
                 <label class="checkbox-container">
-                  <input type="checkbox" control="chat" id="use-chat-magic-text" name="use_magic_text">
+                  <input type="checkbox" control="chat" name="use_magic_text">
                   <span class="checkmark"></span>
                   Магический текст
                 </label>
@@ -814,13 +822,13 @@
                   <div class="simple-sep"></div>
 
                   <label class="checkbox-container">
-                    <input type="checkbox" control="chat" id="use-chat-spamming-anti-repetition" name="use_anti_repetition">
+                    <input type="checkbox" control="chat" name="use_anti_repetition">
                     <span class="checkmark"></span>
                     Анти-Повтор
                   </label>
 
                   <label class="checkbox-container">
-                    <input type="checkbox" control="chat" id="use-chat-spamming-bypass" name="use_bypass">
+                    <input type="checkbox" control="chat" name="use_bypass">
                     <span class="checkmark"></span>
                     Обход
                   </label>
@@ -853,7 +861,7 @@
             <div class="wrap right">
               <div class="checkbox-group">
                 <label class="checkbox-container">
-                  <input type="checkbox" control="action" id="use-action-sync" name="use_sync" checked>
+                  <input type="checkbox" control="action" name="use_sync" checked>
                   <span class="checkmark"></span>
                   Синхронность
                 </label>
@@ -1127,7 +1135,7 @@
                 <div class="hidden-wrapper input" id="killaura-manual-settings-container">
                   <div class="form-input">
                     <label for="killaura-slot" class="text">Слот с оружием</label>
-                    <input type="number" control="killaura" id="killaura-slot" placeholder="0" value="0" name="slot">
+                    <input type="number" control="killaura" id="killaura-slot" placeholder="0" name="slot">
                   </div>
 
                   <div class="form-input">

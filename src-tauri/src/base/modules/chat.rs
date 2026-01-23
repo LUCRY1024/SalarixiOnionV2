@@ -2,9 +2,13 @@ use azalea::prelude::*;
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use tokio::time::sleep;
+use regex::Regex;
+
 
 use crate::TASKS;
+use crate::common::get_player_uuid;
 use crate::tools::*;
+use crate::radar::RadarManager;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +24,7 @@ pub enum ChatMode {
 pub struct ChatOptions {
   pub mode: ChatMode,
   pub message: String,
+  pub use_global_chat: bool,
   pub use_text_mutation: bool,
   pub use_sync: bool,
   pub use_magic_text: bool,
@@ -116,11 +121,58 @@ impl ChatModule {
     }
   }
 
+  fn process_extra_tags(text: String) -> String {
+    let mut result = text.clone();
+
+    let radar_re = Regex::new(r"\#radar\[\w+]").unwrap();
+
+    for teg in radar_re.find_iter(&text.clone()) {
+      if !teg.is_empty() {
+        let split_target: Vec<&str> = teg.as_str().split("[").collect();
+
+        if let Some(target) = split_target.get(1) {
+          let target_nickname = target.replace("]", "").replace(" ", "");
+
+          if let Some(radar_info) = RadarManager::find_target(target_nickname.clone()) {
+            let msg = format!("{} > X: {}, Y: {}, Z: {}", target_nickname, radar_info.x.round(), radar_info.y.round(), radar_info.z.round());
+            
+            result = text.replace(teg.as_str(), msg.as_str());
+          } else {
+            result = text.replace(teg.as_str(), "");
+          }
+        }
+      }
+    }
+
+    let uuid_re = Regex::new(r"\#uuid\[\w+]").unwrap();
+
+    for teg in uuid_re.find_iter(&text.clone()) {
+      if !teg.is_empty() {
+        let split_target: Vec<&str> = teg.as_str().split("[").collect();
+
+        if let Some(target) = split_target.get(1) {
+          let target_nickname = target.replace("]", "").replace(" ", "");
+
+          if let Some(uuid) = get_player_uuid(target_nickname.clone()) {
+            let msg = format!("{} > UUID: {}", target_nickname, uuid);
+            
+            result = text.replace(teg.as_str(), msg.as_str());
+          } else {
+            result = text.replace(teg.as_str(), "");
+          }
+        }
+      }
+    }
+
+    result
+  } 
+
   pub async fn message(bot: &Client, options: ChatOptions) -> anyhow::Result<()> {
     let mut text = options.message.clone();
 
     if options.use_text_mutation {
       text = Mutator::mutate_text(text);
+      text = Self::process_extra_tags(text);
     }
 
     if !options.use_sync {
@@ -129,6 +181,10 @@ impl ChatModule {
 
     if options.use_magic_text {
       text = Self::create_magic_text(&text);
+    }
+
+    if options.use_global_chat {
+      text = format!("!{}", text);
     }
 
     bot.chat(&text);
@@ -144,6 +200,7 @@ impl ChatModule {
 
       if options.use_text_mutation {
         text = Mutator::mutate_text(text);
+        text = Self::process_extra_tags(text);
       }
 
       if options.use_sync {
@@ -160,6 +217,10 @@ impl ChatModule {
                   
       if options.use_bypass {
         final_text = Self::create_bypass_text(&final_text);
+      }
+
+      if options.use_global_chat {
+        final_text = format!("!{}", final_text);
       }
 
       if options.use_anti_repetition {

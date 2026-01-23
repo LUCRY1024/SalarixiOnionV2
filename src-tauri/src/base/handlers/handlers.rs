@@ -210,12 +210,14 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
     Event::Tick => {
       let nickname = bot.username();
 
-      if let Some(_) = STATES.get(&nickname) {
-        let health = bot.health() as u32;
-        let satiety = bot.hunger().food;
+      if let Some(state) = STATES.get(&nickname) {
+        if state.read().unwrap().status.as_str().to_lowercase() == "онлайн" {
+          let health = bot.health() as u32;
+          let satiety = bot.hunger().food;
 
-        STATES.set(&nickname, "health", health.to_string());
-        STATES.set(&nickname, "satiety", satiety.to_string());
+          STATES.set(&nickname, "health", health.to_string());
+          STATES.set(&nickname, "satiety", satiety.to_string());
+        }
       }
     },
     _ => {}

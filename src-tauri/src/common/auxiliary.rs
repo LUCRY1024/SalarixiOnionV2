@@ -4,6 +4,8 @@ use azalea::core::position::BlockPos;
 use azalea::entity::Physics;
 use azalea::block::BlockState;
 
+use crate::base::get_flow_manager;
+
 
 // Функция нахождения пустого слота в инвентаре
 pub fn find_empty_slot_in_invenotry(bot: &Client) -> Option<usize> {
@@ -127,4 +129,25 @@ pub fn convert_inventory_slot_to_hotbar_slot(slot: u16) -> Option<u8> {
     44 => Some(8),
     _ => None
   }
+}
+
+// Функция получения UUID игрока
+pub fn get_player_uuid(nickname: String) -> Option<String> {
+  if let Some(arc) = get_flow_manager() {
+    let fm = arc.write();
+
+    if let Some(swarm) = fm.swarm.clone() {
+      for bot in swarm {
+        let tab_list = bot.tab_list();
+
+        for (uuid, info) in tab_list {
+          if info.profile.name == nickname {
+            return Some(uuid.to_string());
+          }
+        }
+      }
+    }
+  }
+
+  None
 }
