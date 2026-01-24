@@ -20,6 +20,7 @@ interface BotProfile {
   satiety: number;
   captcha_url: string | null;
   registered: boolean;
+  skin_is_set: boolean;
 }
 
 export class MonitoringManager {

@@ -158,11 +158,44 @@ pub struct LaunchOptions {
   pub view_distance: u8,
   pub language: String,
   pub chat_colors: bool,
-  pub humanoid_arm: String,
+  pub humanoid_arm: Option<String>,
   pub use_auto_rejoin: bool,
   pub proxy_list: Option<String>,
   pub use_proxy: bool,
+  pub use_anti_captcha: bool,
+  pub skin_settings: SkinSettings,
+  pub anti_captcha_settings: AntiCaptchaSettings,
   pub plugins: Plugins
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SkinSettings {
+  pub skin_type: String,
+  pub set_skin_command: Option<String>,
+  pub custom_skin_by_nickname: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AntiCaptchaSettings {
+  pub captcha_type: String,
+  pub options: AntiCaptchaOptions
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AntiCaptchaOptions {
+  pub web: AntiWebCaptchaOptions,
+  pub frame: AntiFrameCaptchaOptions
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AntiWebCaptchaOptions {
+  pub regex: String,
+  pub required_url_part: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AntiFrameCaptchaOptions {
+  pub radius: Option<f64>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -378,6 +378,29 @@
             <label for="humanoid-arm" class="text">Ведущая рука</label>
             <input type="text" name="humanoidArm" id="humanoid-arm" placeholder="left / right" value="right" keep="true">
           </div>
+
+          <div class="separator">
+            <span class="separator-title">Скины</span>
+          </div>
+
+          <div class="custom-select" style="margin-top: 10px; margin-bottom: 10px;">
+            <label>Скин: </label>
+            <select id="select-skin-type">
+              <option value="default">По умолчанию</option>
+              <option value="random">Случайный</option>
+              <option value="custom">Кастомный</option>
+            </select>
+          </div>
+
+          <div class="form-input" id="set-skin-command-container" style="display: none;">
+            <label for="set-skin-command" class="text">Команда установки скина</label>
+            <input type="text" id="set-skin-command" placeholder="/skin" value="/skin">
+          </div>
+
+          <div class="form-input" id="custom-skin-container" style="display: none;">
+            <label for="skin-by-nickname" class="text">Скин игрока по никнейму</label>
+            <input type="text" id="skin-by-nickname" placeholder="player_123">
+          </div>
         </div>
 
         <div class="settings-column right">

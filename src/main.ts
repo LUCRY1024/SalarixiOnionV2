@@ -102,6 +102,10 @@ async function startBots(): Promise<void> {
 
   const proxyList = (document.getElementById('proxy-list') as HTMLTextAreaElement).value;
 
+  const skinType = (document.getElementById('select-skin-type') as HTMLSelectElement).value;
+  const setSkinCommand = (document.getElementById('set-skin-command') as HTMLInputElement).value;
+  const customSkinByNickname = (document.getElementById('skin-by-nickname') as HTMLInputElement).value;
+
   const captchaType = (document.getElementById('select-captcha-type') as HTMLSelectElement).value;
 
   const antiWebCaptchaOptions: {
@@ -165,6 +169,11 @@ async function startBots(): Promise<void> {
     use_proxy: useProxy,
     proxy_list: proxyList,
     use_anti_captcha: useAntiCaptcha,
+    skin_settings: {
+      skin_type: skinType,
+      set_skin_command: setSkinCommand,
+      custom_skin_by_nickname: customSkinByNickname 
+    },
     anti_captcha_settings: {
       captcha_type: captchaType,
       options: {
@@ -601,6 +610,22 @@ class ElementManager {
         selectProxyFinderCountry.disabled = false;
       } else {
         selectProxyFinderCountry.disabled = true;
+      }
+    });
+
+    document.getElementById('select-skin-type')?.addEventListener('change', function (this: HTMLSelectElement) {
+      const setSkinCommandContainer = document.getElementById('set-skin-command-container') as HTMLElement;
+      const customSkinContainer = document.getElementById('custom-skin-container') as HTMLElement;
+
+      if (this.value === 'default') {
+        setSkinCommandContainer.style.display = 'none';
+        customSkinContainer.style.display = 'none';
+      } else if (this.value === 'random') {
+        setSkinCommandContainer.style.display = 'flex';
+        customSkinContainer.style.display = 'none';
+      } else if (this.value === 'custom') {
+        setSkinCommandContainer.style.display = 'flex';
+        customSkinContainer.style.display = 'flex';
       }
     });
   } 
