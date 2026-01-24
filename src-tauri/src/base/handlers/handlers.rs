@@ -1,3 +1,6 @@
+use azalea::entity::metadata::Health;
+use azalea::local_player::Hunger;
+use azalea::protocol::common::client_information::ParticleStatus;
 use azalea::swarm::*;
 use azalea::prelude::*;
 use azalea::entity::HumanoidArm;
@@ -5,15 +8,18 @@ use azalea::{ClientInformation, NoState};
 use tokio::time::sleep;
 use std::time::Duration;
 
-use crate::tools::{randuint};
+use crate::tools::{randuint, randelem, randchance};
 use crate::state::{STATES, BotState};
 use crate::tasks::TASKS;
-use crate::base::get_flow_manager;
-use crate::base::generate_nickname_or_password;
-use crate::base::update_bots_count;
-use crate::base::{AutoArmorPlugin, AutoTotemPlugin, AutoEatPlugin};
+use crate::base::*;
 use crate::emit::*;
-use crate::extract_link_from_message;
+use crate::CaptchaCatcher;
+
+
+const ACCOUNTS_WITH_SKINS: &[&str] = &[
+  "ordunury", "tqyd", "rittes", "Kalmdel", "rlyy", "tusxi", "hrfi", "seree", "NewGuyCri", "UnityForsaken",
+  "B0RAA", "cigarist", "fumbled", "_Malrand_"
+];
 
 
 // Swarm-обработчик
@@ -38,7 +44,30 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
 
       if let Some(arc) = get_flow_manager() {
         let mut fm = arc.write();
-        fm.bots.insert(nickname.clone(), bot);
+        fm.bots.insert(nickname.clone(), bot.clone());
+
+        if let Some(opts) = fm.options.clone() {
+          bot.set_client_information(ClientInformation {
+            view_distance: opts.view_distance,
+            language: opts.language,
+            chat_colors: opts.chat_colors,
+            main_hand: if let Some(arm) = opts.humanoid_arm { 
+              if arm.as_str() == "left" { 
+                HumanoidArm::Left 
+              } else { 
+                HumanoidArm::Right 
+              } 
+            } else { 
+              if randchance(0.5) {
+                HumanoidArm::Left
+              } else {
+                HumanoidArm::Right
+              }
+            },
+            particle_status: ParticleStatus::Minimal,
+            ..Default::default()
+          });
+        }
       }  
 
       emit_event(EventType::Log(LogEventPayload { 
@@ -69,6 +98,10 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
       }
     },
     Event::Spawn => {
+      let nickname = bot.username();
+
+      update_bots_count('+');
+
       if let Some(arc) = get_flow_manager() {
         if let Some(options) = arc.read().options.clone() {
           if options.plugins.auto_armor {
@@ -85,9 +118,17 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
         }
       }
 
-      let nickname = bot.username();
+      if let Some(arc) = get_flow_manager() {
+        if let Some(options) = arc.read().options.clone() {
+          if options.use_anti_captcha {
+            let opts = options.anti_captcha_settings.options.frame.clone();
 
-      update_bots_count('+');
+            if options.anti_captcha_settings.captcha_type.as_str() == "frame" {
+              CaptchaCatcher::catch_image_from_frame(&bot, opts.radius.unwrap_or(10.0));
+            }
+          }
+        }
+      }
 
       TASKS.add(&nickname);
 
@@ -102,14 +143,6 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
         let options = arc.write().options.clone();
 
         if let Some(opts) = options {
-          bot.set_client_information(ClientInformation {
-            view_distance: opts.view_distance,
-            language: opts.language,
-            chat_colors: opts.chat_colors,
-            main_hand: if opts.humanoid_arm.to_lowercase().as_str() == "left" { HumanoidArm::Left } else { HumanoidArm::Right },
-            ..Default::default()
-          });
-
           let min_delay;
           let max_delay;
 
@@ -149,6 +182,62 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
               name: "info".to_string(),
               message: format!("Бот {} {}: {}", &nickname, action, &cmd)
             }));
+          }
+        }
+      }
+
+      if let Some(state) = STATES.get(&nickname) {
+        if !state.read().unwrap().skin_is_set {
+          if let Some(arc) = get_flow_manager() {
+            let fm = arc.write();
+
+            if let Some(opts) = fm.options.clone() {
+              match opts.skin_settings.skin_type.as_str() {
+                "random" => {
+                  let bot_clone = bot.clone();
+
+                  tokio::spawn(async move {
+                    let command = format!("{} {}", opts.skin_settings.set_skin_command.unwrap_or("/skin".to_string()), randelem(ACCOUNTS_WITH_SKINS).unwrap());
+
+                    bot_clone.chat(command.clone());
+
+                    sleep(Duration::from_millis(3000)).await;
+                    
+                    emit_event(EventType::Log(LogEventPayload { 
+                      name: "system".to_string(), 
+                      message: format!("Бот {} успешно установил скин: {}", bot_clone.username(), command)
+                    }));
+
+                    bot_clone.disconnect();
+                  });
+
+                  STATES.set(&nickname, "skin_is_set", "true".to_string());
+                },
+                "custom" => {
+                  if let Some(n) = opts.skin_settings.custom_skin_by_nickname {
+                    let bot_clone = bot.clone();
+
+                    tokio::spawn(async move {
+                      let command = format!("{} {}", opts.skin_settings.set_skin_command.unwrap_or("/skin".to_string()), n);
+
+                      bot_clone.chat(command.clone());
+
+                      sleep(Duration::from_millis(3000)).await;
+                      
+                      emit_event(EventType::Log(LogEventPayload { 
+                        name: "system".to_string(), 
+                        message: format!("Бот {} успешно установил скин: {}", bot_clone.username(), command)
+                      }));
+
+                      bot_clone.disconnect();
+                    });
+
+                    STATES.set(&nickname, "skin_is_set", "true".to_string());
+                  }
+                },
+                _ => {}
+              }
+            }
           }
         }
       }
@@ -199,10 +288,20 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
         message: message
       }));
 
-      if let Some(link) = extract_link_from_message(packet.message().to_string()) {
-        if let Some(state) = STATES.get(&nickname) {
-          if state.read().unwrap().captcha_url.is_none() {
-            STATES.set(&nickname, "captcha_url", link);
+      if let Some(arc) = get_flow_manager() {
+        if let Some(options) = arc.read().options.clone() {
+          if options.use_anti_captcha {
+            let opts = options.anti_captcha_settings.options.web.clone();
+
+            if options.anti_captcha_settings.captcha_type.as_str() == "web" {
+              if let Some(link) = CaptchaCatcher::catch_url_from_message(packet.message().to_string(), opts.regex.as_str(), opts.required_url_part) {
+                if let Some(state) = STATES.get(&nickname) {
+                  if state.read().unwrap().captcha_url.is_none() {
+                    STATES.set(&nickname, "captcha_url", link);
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -212,11 +311,13 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
 
       if let Some(state) = STATES.get(&nickname) {
         if state.read().unwrap().status.as_str().to_lowercase() == "онлайн" {
-          let health = bot.health() as u32;
-          let satiety = bot.hunger().food;
+          if let Some(health) = bot.get_component::<Health>() {
+            STATES.set(&nickname, "health", health.to_string());
+          }
 
-          STATES.set(&nickname, "health", health.to_string());
-          STATES.set(&nickname, "satiety", satiety.to_string());
+          if let Some(hunger) = bot.get_component::<Hunger>() {
+            STATES.set(&nickname, "satiety", hunger.food.to_string());
+          }
         }
       }
     },
