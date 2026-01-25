@@ -188,7 +188,7 @@ pub struct AntiCaptchaOptions {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AntiWebCaptchaOptions {
-  pub regex: String,
+  pub regex: Option<String>,
   pub required_url_part: Option<String>
 }
 
@@ -304,7 +304,7 @@ impl FlowManager {
 
                       if let Some(state) = STATES.get(&account.username) {
                         let split_address: Vec<&str> = address.split(":").collect();
-                        state.write().set_proxy(split_address.get(0).unwrap());
+                        state.write().unwrap().proxy = split_address.get(0).unwrap().to_string();
                       }
                     }  
                   }  

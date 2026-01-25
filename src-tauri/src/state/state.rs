@@ -1,24 +1,23 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use parking_lot::RwLock;
 
 
 pub static STATES: Lazy<Arc<BotStateManager>> = Lazy::new(|| Arc::new(BotStateManager::new()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BotState {
-  status: String,
-  nickname: String,
-  password: String,
-  version: String,
-  proxy: String,
-  health: u32,
-  satiety: u32,
-  registered: bool,
-  skin_is_set: bool,
-  captcha_caught: bool
+  pub status: String,
+  pub nickname: String,
+  pub version: String,
+  pub password: String,
+  pub proxy: String,
+  pub health: u32,
+  pub satiety: u32,
+  pub registered: bool,
+  pub skin_is_set: bool,
+  pub captcha_caught: bool
 }
 
 impl BotState {
@@ -26,8 +25,8 @@ impl BotState {
     Self {
       status: "Соединение...".to_string(),
       nickname: nickname,
-      password: password,
       version: version,
+      password: password,
       proxy: "-".to_string(),
       health: 0,
       satiety: 0,
@@ -35,40 +34,6 @@ impl BotState {
       skin_is_set: false,
       captcha_caught: false
     }
-  }
-
-  pub fn get_string(&self, field: &str) -> Option<&String> {
-    match field {
-      "status" => return Some(&self.status),
-      "nickname" => return Some(&self.nickname),
-      "password" => return Some(&self.password),
-      "version" => return Some(&self.version),
-      "proxy" => return Some(&self.proxy),
-      _ => {}
-    }
-
-    None
-  }
-
-  pub fn get_number(&self, field: &str) -> Option<u32> {
-    match field {
-      "health" => return Some(self.health),
-      "satiety" => return Some(self.satiety),
-      _ => {}
-    }
-
-    None
-  }
-
-  pub fn get_bool(&self, field: &str) -> Option<bool> {
-    match field {
-      "registered" => return Some(self.registered),
-      "skin_is_set" => return Some(self.skin_is_set),
-      "captcha_caught" => return Some(self.captcha_caught),
-      _ => {}
-    }
-
-    None
   }
 
   pub fn set_status(&mut self, status: &str) {
@@ -117,19 +82,19 @@ impl BotStateManager {
 
   pub fn add(&self, nickname: &String, state: BotState) -> Arc<RwLock<BotState>> {
     let arc_state = Arc::new(RwLock::new(state));
-    let mut states = self.states.write();
+    let mut states = self.states.write().unwrap();
     states.insert(nickname.clone(), arc_state.clone());
     arc_state
   }
 
   pub fn get(&self, nickname: &String) -> Option<Arc<RwLock<BotState>>> {
-    let states = self.states.read();
+    let states = self.states.read().unwrap();
     states.get(nickname).cloned()
   }
 
   pub fn set(&self, nickname: &String, field: &str, value: String) {
-    if let Some(arc) = self.states.write().get(nickname) {
-      let mut state = arc.write();
+    if let Some(arc) = self.states.write().unwrap().get(nickname) {
+      let mut state = arc.write().unwrap();
 
       match field {
         "status" => state.set_status(&value),
@@ -146,16 +111,18 @@ impl BotStateManager {
   }
 
   pub fn clear(&self) {
-    let mut states = self.states.write();
+    let mut states = self.states.write().unwrap();
     states.clear();
   }
 
   pub fn get_all_profiles(&self) -> HashMap<String, BotState> {
-    let states = self.states.read();
+    let states = self.states.read().unwrap();
     let mut profiles = HashMap::new();
 
     for (nickname, state) in states.iter() {
-      profiles.insert(nickname.clone(), state.read().clone());
+      if let Ok(state_guard) = state.read() {
+        profiles.insert(nickname.clone(), state_guard.clone());
+      }
     }
 
     profiles
