@@ -5,6 +5,7 @@ interface Options {
   algorithm: string; 
   protocol: string; 
   country: string; 
+  port: string;
   count: string;
 };
 
@@ -75,6 +76,7 @@ export class ProxyManager {
       const algorithm = (document.getElementById('proxy-finder-algorithm') as HTMLSelectElement).value;
       const protocol = (document.getElementById('proxy-finder-protocol') as HTMLSelectElement).value;
       const country = (document.getElementById('proxy-finder-country') as HTMLSelectElement).value;
+      const port = (document.getElementById('proxy-finder-port') as HTMLSelectElement).value;
       const count = (document.getElementById('proxy-finder-count') as HTMLInputElement).value;
 
       this.proxyFinderStatus!.innerText = 'Поиск прокси...';
@@ -83,6 +85,7 @@ export class ProxyManager {
         algorithm: algorithm,
         protocol: protocol,
         country: country,
+        port: port,
         count: count
       });
 
@@ -110,7 +113,7 @@ export class ProxyManager {
     }
   }
 
-  private async scrape(options: Options) {
+  private async scrape(options: Options): Promise<string | unknown> {
     try {
       let proxy_list: any[] = [];
 
@@ -126,11 +129,23 @@ export class ProxyManager {
 
       proxy_list = Array.from(new Set(proxy_list.map(String)));
 
-      const out = proxy_list.join('\n');
+      let result: string[] = [];
 
-      return out;
-    } catch (err: any) {
-      return err;
+      if (options.port != 'any') {
+        for (const proxy of proxy_list) {
+          if (proxy.includes(options.port)) {
+            result.push(proxy);
+          }
+        }
+      } else {
+        for (const proxy of proxy_list) {
+          result.push(proxy);
+        }
+      }
+
+      return result.join('\n');
+    } catch (error) {
+      return error;
     }
   }
 
