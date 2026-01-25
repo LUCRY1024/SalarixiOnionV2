@@ -296,6 +296,11 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
                   if !state.captcha_caught {
                     state.set_captcha_caught(true);
 
+                    emit_event(EventType::Log(LogEventPayload { 
+                      name: "info".to_string(), 
+                      message: format!("[ Анти-Капча ]: {} получил ссылку на капчу", nickname)
+                    }));
+
                     emit_event(EventType::AntiWebCaptcha(AntiWebCaptchaEventPayload { 
                       captcha_url: url, 
                       nickname: nickname
@@ -333,6 +338,11 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
 
             if !state.captcha_caught {
               state.set_captcha_caught(true);
+
+              emit_event(EventType::Log(LogEventPayload { 
+                name: "info".to_string(), 
+                message: format!("[ Анти-Капча ]: {} получил капчу с карты", nickname)
+              }));
 
               let base64_code = AntiMapCaptcha::create_and_save_png_image(&map_patch.map_colors);
 

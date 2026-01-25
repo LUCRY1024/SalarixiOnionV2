@@ -113,20 +113,9 @@ async function startBots(): Promise<void> {
     regex: null | string;
     required_url_part: null | string;
   } = { 
-    regex: null,
-    required_url_part: null
+    regex: (document.getElementById('anti-web-captcha-regex') as HTMLInputElement).value,
+    required_url_part: (document.getElementById('anti-web-captcha-required-url-part') as HTMLInputElement).value
   };
-
-  document.querySelectorAll<HTMLInputElement>('[anti-captcha-option="web"]').forEach(o => {
-    switch (o.name) {
-      case 'regex':
-        antiWebCaptchaOptions.regex = o.value ? o.value : 'https?://[^\s]+';
-        break;
-      case 'required_url_part':
-        antiWebCaptchaOptions.required_url_part = o.value;
-        break;
-    }
-  });
 
   const result = await invoke('launch_bots', { options: {
     address: address || 'localhost',

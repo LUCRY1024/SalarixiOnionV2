@@ -218,8 +218,8 @@
           </button>
 
           <button class="btn red" id="stop" style="width: 140px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stop" viewBox="0 0 16 16">
-              <path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11zM5 4.5a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5V5a.5.5 0 0 0-.5-.5z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stop-fill" viewBox="0 0 16 16">
+              <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5"/>
             </svg>
             Остановить
           </button>
@@ -724,19 +724,18 @@
           <select id="select-captcha-type">
             <option value="web">Web</option>
             <option value="map">Map</option>
-            <option value="frame" disabled>Frame</option>
           </select>
         </div>
 
         <div class="options" id="anti-web-captcha-options">
           <div class="form-input">
-            <label for="regular-expression-for-captcha-url" class="text">Регулярное выражение</label>
-            <input type="text" anti-captcha-option="web" id="regular-expression-for-captcha-url" placeholder="https?://[^\s]+" value="https?://[^\s]+" name="regex">
+            <label for="anti-web-captcha-regex" class="text">Регулярное выражение</label>
+            <input type="text" id="anti-web-captcha-regex" placeholder="https?://[^\s]+" value="https?://[^\s]+" name="regex">
           </div>
 
           <div class="form-input">
-            <label for="required-captcha-url-part" class="text">Обязательная часть ссылки</label>
-            <input type="text" anti-captcha-option="web" id="required-captcha-url-part" placeholder="anti-bot" name="required_url_part">
+            <label for="anti-web-captcha-required-url-part" class="text">Обязательная часть ссылки</label>
+            <input type="text" id="anti-web-captcha-required-url-part" placeholder="anti-bot" name="required_url_part">
           </div>
         </div>
       </div>

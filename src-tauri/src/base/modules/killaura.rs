@@ -89,19 +89,17 @@ impl KillauraModule {
     let menu = bot.menu();
 
     for slot in menu.hotbar_slots_range() {
-      if slot > 9 {
-        if let Some(item) = menu.slot(slot) {
-          if !item.is_empty() {
-            match item.kind() {
-              ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot), priority: 0 }); },
-              ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot), priority: 1 }); },
-              ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot), priority: 2 }); },
-              ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot), priority: 3 }); },
-              ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot), priority: 4 }); },
-              ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot), priority: 5 }); },
-              ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot), priority: 6 }); },
-              _ => {}
-            }
+      if let Some(item) = menu.slot(slot) {
+        if !item.is_empty() {
+          match item.kind() {
+            ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot), priority: 0 }); },
+            ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot), priority: 1 }); },
+            ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot), priority: 2 }); },
+            ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot), priority: 3 }); },
+            ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot), priority: 4 }); },
+            ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot), priority: 5 }); },
+            ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot), priority: 6 }); },
+            _ => {}
           }
         }
       }
