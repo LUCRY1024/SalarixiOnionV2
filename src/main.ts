@@ -9,6 +9,7 @@ import { ProxyManager } from './modules/proxy';
 import { ChartManager } from './modules/chart';
 import { MonitoringManager } from './modules/monitoring';
 import { RadarManager } from './modules/radar';
+import { translate, Language } from './modules/translator';
 
 
 Chart.register(...registerables);
@@ -626,11 +627,16 @@ class ElementManager {
       this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
     });
 
+    document.getElementById('interface-client-language')?.addEventListener('change', async () => {
+      await translate((document.getElementById('interface-client-language') as HTMLSelectElement).value as Language);
+    });
+
     this.setInterfaceTheme((document.getElementById('interface-theme') as HTMLSelectElement).value);
     this.setInterfaceGlobalFontFamily((document.getElementById('interface-global-font-family') as HTMLSelectElement).value);
     this.setInterfaceShowPanelIcons((document.getElementById('interface-show-panel-icons') as HTMLSelectElement).value);
     this.setInterfacePanelFontFamily((document.getElementById('interface-panel-font-family') as HTMLSelectElement).value);
     this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
+    await translate((document.getElementById('interface-client-language') as HTMLSelectElement).value as Language);
   } 
 
   private setInterfaceTheme(theme: string): void {

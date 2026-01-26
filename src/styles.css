@@ -36,7 +36,7 @@
 }
 
 ::selection {
-  background-color: var(--dull-spec-color); 
+  background-color: #444444a9;
 }
 
 ::-webkit-scrollbar {
@@ -1878,12 +1878,16 @@ textarea::-webkit-resizer {
   padding: 20px;
 }
 
-.cover.radar .auto-save-settings .checkbox-container .checkmark::after {
-  margin-left: 2px;
+.cover.radar .auto-save-settings .checkbox-container {
+  width: max-content;
+}
+
+.cover.radar .auto-save-settings .checkbox-container .checkmark:after {
+  margin-left: 1px;
 }
 
 .cover.radar .custom-select {
-  width: 280px;
+  width: max-content;
 }
 
 .radar-wrap {
