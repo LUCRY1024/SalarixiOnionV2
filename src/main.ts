@@ -605,7 +605,154 @@ class ElementManager {
         customSkinContainer.style.display = 'flex';
       }
     });
+
+    document.getElementById('interface-theme')?.addEventListener('change', () => {
+      this.setInterfaceTheme((document.getElementById('interface-theme') as HTMLSelectElement).value);
+    });
+
+    document.getElementById('interface-global-font-family')?.addEventListener('change', () => {
+      this.setInterfaceGlobalFontFamily((document.getElementById('interface-global-font-family') as HTMLSelectElement).value);
+    });
+
+    document.getElementById('interface-show-panel-icons')?.addEventListener('change', () => {
+      this.setInterfaceShowPanelIcons((document.getElementById('interface-show-panel-icons') as HTMLSelectElement).value);
+    });
+
+    document.getElementById('interface-panel-font-family')?.addEventListener('change', () => {
+      this.setInterfacePanelFontFamily((document.getElementById('interface-panel-font-family') as HTMLSelectElement).value);
+    });
+
+    document.getElementById('interface-panel-font-size')?.addEventListener('change', () => {
+      this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
+    });
+
+    this.setInterfaceTheme((document.getElementById('interface-theme') as HTMLSelectElement).value);
+    this.setInterfaceGlobalFontFamily((document.getElementById('interface-global-font-family') as HTMLSelectElement).value);
+    this.setInterfaceShowPanelIcons((document.getElementById('interface-show-panel-icons') as HTMLSelectElement).value);
+    this.setInterfacePanelFontFamily((document.getElementById('interface-panel-font-family') as HTMLSelectElement).value);
+    this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
   } 
+
+  private setInterfaceTheme(theme: string): void {
+    try {
+      const root = document.documentElement;
+
+      switch (theme) {
+        case 'onion': 
+          root.style.setProperty('--spec-color', '#7946f0');
+          root.style.setProperty('--dull-spec-color', '#5426be');
+          root.style.setProperty('--chbx-spec-color', '#7946f0');
+          root.style.setProperty('--chbx-dull-spec-color', '#5426be');
+          break;
+        case 'toxic': 
+          root.style.setProperty('--spec-color', '#54f046');
+          root.style.setProperty('--dull-spec-color', '#51be26');
+          root.style.setProperty('--chbx-spec-color', '#25a115');
+          root.style.setProperty('--chbx-dull-spec-color', '#1b7210');
+          break;
+        case 'ice': 
+          root.style.setProperty('--spec-color', '#46b2f0');
+          root.style.setProperty('--dull-spec-color', '#26b9be');
+          root.style.setProperty('--chbx-spec-color', '#26a9e6');
+          root.style.setProperty('--chbx-dull-spec-color', '#0d7696');
+          break;
+        case 'blood':
+          root.style.setProperty('--spec-color', '#f03333');
+          root.style.setProperty('--dull-spec-color', '#d62727');
+          root.style.setProperty('--chbx-spec-color', '#ce2323');
+          root.style.setProperty('--chbx-dull-spec-color', '#801111');
+          break;
+        case 'gold': 
+          root.style.setProperty('--spec-color', '#f0df46');
+          root.style.setProperty('--dull-spec-color', '#bbbe26');
+          root.style.setProperty('--chbx-spec-color', '#bdce23');
+          root.style.setProperty('--chbx-dull-spec-color', '#807e11');
+          break;
+        case 'dark': 
+          root.style.setProperty('--spec-color', '#616161');
+          root.style.setProperty('--dull-spec-color', '#3d3d3d');
+          root.style.setProperty('--chbx-spec-color', '#3b3b3b');
+          root.style.setProperty('--chbx-dull-spec-color', '#2e2e2e');
+          break;
+      }
+    } catch (error) {
+      log(`Ошибка изменения темы: ${error}`, 'error');
+    }
+  }
+
+  private setInterfaceGlobalFontFamily(fontFamily: string): void {
+    try {
+      const root = document.documentElement;
+
+      switch (fontFamily) {
+        case 'inter':
+          root.style.setProperty('--global-font-family', `'Inter', sans-serif`);
+          break;
+        case 'jetbrains-mono':
+          root.style.setProperty('--global-font-family', `'Segoe UI', Tahoma, Geneva, Verdana, sans-serif`);
+          break;
+        case 'segoe-ui':
+          root.style.setProperty('--global-font-family', `'Gill Sans', 'Gill Sans MT', 'Trebuchet MS', sans-serif`);
+          break;
+      }
+    } catch (error) {
+      log(`Ошибка изменения шрифта: ${error}`, 'error');
+    }
+  }
+
+  private setInterfaceShowPanelIcons(state: string): void {
+    try {
+      document.querySelectorAll<SVGElement>('[panel-btn-icon="true"]').forEach(i => {
+        if (state === 'hide') {
+          i.style.display = 'none';
+        } else {
+          i.style.display = 'flex';
+        }
+      });
+    } catch (error) {
+      log(`Ошибка изменения состояния иконок на панели: ${error}`, 'error');
+    }
+  }
+
+  private setInterfacePanelFontFamily(fontFamily: string): void {
+    try {
+      const root = document.documentElement;
+
+      switch (fontFamily) {
+        case 'inter':
+          root.style.setProperty('--panel-font-family', `'Inter', sans-serif`);
+          root.style.setProperty('--panel-text-margin-top', '1px');
+          break;
+        case 'jetbrains-mono':
+          root.style.setProperty('--panel-font-family', `'JetBrains Mono', 'Fira Code', monospace`);
+          root.style.setProperty('--panel-text-margin-top', '2px');
+          break;
+        case 'segoe-ui':
+          root.style.setProperty('--panel-font-family', `'Segoe UI', Tahoma, Geneva, Verdana, sans-serif`);
+          root.style.setProperty('--panel-text-margin-top', '-1px');
+          break;
+        case 'courier-new':
+          root.style.setProperty('--panel-font-family', `'Courier New', Courier, monospace`);
+          root.style.setProperty('--panel-text-margin-top', '4px');
+          break;
+        case 'trebuchet-ms':
+          root.style.setProperty('--panel-font-family', `'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif`);
+          root.style.setProperty('--panel-text-margin-top', '1px');
+          break;
+      }
+    } catch (error) {
+      log(`Ошибка изменения шрифта панели: ${error}`, 'error');
+    }
+  }
+
+  private setInterfacePanelFontSize(size: string): void {
+    try {
+      const root = document.documentElement;
+      root.style.setProperty('--panel-font-size', size);
+    } catch (error) {
+      log(`Ошибка изменения размера шрифта панели: ${error}`, 'error');
+    }
+  }
 
   private async initPluginDescriptions(): Promise<void> {
     try {

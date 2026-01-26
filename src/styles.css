@@ -7,12 +7,25 @@
   --h-font-family: 'Segoe UI', sans-serif;
   --s-font-family: 'JetBrains Mono', 'Fira Code', monospace;
   --o-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  
   --bg-color: #161515;
   --bd-color: #464646;
   --tbd-color: #3b3a3acc;
 
+  --global-font-family: 'Inter', sans-serif;
+
+  --spec-color: #7946f0;
+  --dull-spec-color: #5426be;
+
+  --chbx-spec-color: #7946f0;
+  --chbx-dull-spec-color: #5426be;
+
+  --panel-font-family: 'Inter', sans-serif;
+  --panel-text-margin-top: 1px;
+  --panel-font-size: 15px;
+
   background-color: var(--bg-color);
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   -webkit-user-select: none; 
   -moz-user-select: none;
   -ms-user-select: none;
@@ -23,7 +36,7 @@
 }
 
 ::selection {
-  background: #474444c2; 
+  background-color: var(--dull-spec-color); 
 }
 
 ::-webkit-scrollbar {
@@ -37,7 +50,6 @@
   width: 100%;
   -webkit-app-region: drag; 
   background-color: #131212;
-  color: #fff;
   height: 40px; 
   display: flex;
   align-items: center;
@@ -55,16 +67,16 @@
   letter-spacing: 0.5px;
   font-size: 16px;
   font-weight: bold;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
 }
 
 .title-bar .title .name {
-  color: rgb(110, 85, 255);
+  color: var(--spec-color);
 }
 
 .title-bar .title .version {
   margin-left: 6px;
-  color: rgb(115, 91, 255);
+  color: var(--spec-color);
 }
 
 .title-bar .controls {
@@ -97,10 +109,10 @@
   position: fixed;
   left: 0;
   top: 40px;
-  background-color: #181616;
+  background-color: var(--bg-color);
   width: 210px;
   height: 100vh;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   border-right: 1px solid var(--bd-color);
   padding-top: 15px;
   margin: 0;
@@ -128,7 +140,7 @@
   left: 239px;
   width: 750px;
   height: 510px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   display: none; 
   z-index: 1000;
   border-radius: 6px;
@@ -173,7 +185,7 @@
   justify-content: left;
   align-items: center;
   text-align: center;
-  padding-left: 10px;
+  padding-left: 13px;
   padding-right: 10px;
   gap: 6px;
   height: 28px;
@@ -182,7 +194,7 @@
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  border-left: 2px solid transparent;
+  border-left: 1px solid transparent;
   color: #cac7c7;
   outline: none;
   transition: background 0.2s ease, color 0.2s ease;
@@ -211,8 +223,8 @@
 }
 
 .panel-btn.selected::before {
-  background-color: #7946f0;
-  box-shadow: 0 0 8px #7946f0;
+  background-color: var(--spec-color);
+  box-shadow: 0 0 8px var(--spec-color);
   opacity: 1;
   animation: show-button-border 0.2s ease;
 }
@@ -226,13 +238,14 @@
 .panel-btn svg {
   width: 16px;
   height: 16px;
-  margin-left: 3px;
 }
 
 .panel-btn .text {
-  font-size: 15px;
-  font-family: var(--d-font-family);
-  letter-spacing: 1px;
+  font-size: var(--panel-font-size);
+  font-weight: normal;
+  font-family: var(--panel-font-family);
+  letter-spacing: 0.5px;
+  margin-top: var(--panel-text-margin-top);
 }
 
 .main-container {
@@ -278,7 +291,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   color: #fff;
   font-size: 15px;
   font-weight: normal; 
@@ -356,7 +369,7 @@
 
 .settings-column.left .separator .separator-title {
   width: min-content;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-weight: normal;
   background-color: var(--bg-color); 
   white-space: nowrap;
@@ -469,7 +482,7 @@ input {
   display: flex;
   width: auto;
   height: 38px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   border-radius: 6px;
   outline: none;
@@ -503,14 +516,6 @@ p {
   margin: 0;
 }
 
-.author {
-  font-family: var(--d-font-family);
-  color: #8d8a8a;
-  font-size: 13px;
-  font-weight: normal;
-  text-align: center;
-}
-
 .btn {
   display: flex;
   justify-content: center;
@@ -526,7 +531,7 @@ p {
   border-radius: 6px;
   color: #ebebeb;
   font-size: 14px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   letter-spacing: 0.2px;
   font-weight: normal;
   gap: 6px;
@@ -605,11 +610,16 @@ p {
 
 .control-group {
   position: absolute;
-  left: 15px;
+  left: 0;
   bottom: 30px;
   height: 30px;
-  width: 150px;
+  width: 180px;
   z-index: 1;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid var(--bd-color);
+  border-bottom: 1px solid var(--bd-color);
 }
 
 .button-card {
@@ -670,7 +680,7 @@ p {
 
 .control-btn.selected {
   background-color: #3b3b3b36;
-  border-left-color: #7946f0;
+  border-left-color: var(--spec-color);
 }
 
 .control-btn:disabled {
@@ -688,7 +698,7 @@ p {
 
 .control-btn .text {
   font-size: 14px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   letter-spacing: 1px;
 }
 
@@ -725,7 +735,7 @@ p {
 }
 
 .btn-social svg:hover {
-  color: #735afd;
+  color: var(--spec-color);
 }
 
 .form-input {
@@ -749,7 +759,7 @@ p {
 }
 
 .form-input label.text {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   font-weight: normal;
   color: #d8d8d8;
@@ -824,7 +834,7 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   color: #fff;
 }
 
@@ -847,7 +857,7 @@ p {
 
 .proxy-counter {
   text-align: left;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   margin-top: 2px;
 }
@@ -1040,13 +1050,13 @@ p {
   border-radius: 8px;
   border: 1px solid #2e2e2e;
   background-color: rgba(32, 32, 32, 0.137); 
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 16px;
   color: #d1d1d1;
 }
 
 .features-title {
-  color: #7552f5;
+  color: var(--spec-color);
   font-weight: 600;
   font-size: 1rem;
   text-align: center;
@@ -1073,7 +1083,7 @@ p {
   background-size: 30px 30px;
   border-radius: 8px;
   border: 1px solid rgba(52, 51, 53, 0.8);
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   color: #815dd9;
   font-weight: bold;
@@ -1125,7 +1135,7 @@ p {
   cursor: pointer;
   color: #fff;
   user-select: none;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
 }
 
@@ -1156,8 +1166,8 @@ p {
 }
 
 .checkbox-container input[type='checkbox']:checked ~ .checkmark {
-  background-color: #5428ac;
-  border-color: #7036e6;
+  background-color: var(--chbx-dull-spec-color);
+  border-color: var(--chbx-spec-color);
 }
 
 .checkbox-container input[type='checkbox']:checked ~ .checkmark:after {
@@ -1200,7 +1210,7 @@ p {
 }
 
 .custom-select label {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   color: #fff;
   font-size: 15px;
   margin-right: 12px; 
@@ -1213,7 +1223,7 @@ p {
   -ms-progress-appearance: none;
 	width: 180px;
   height: 34px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
 	font-size: 14px;
   font-weight: normal;
 	padding: 0 10px;
@@ -1233,7 +1243,7 @@ p {
 }
 
 .custom-select select option {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
 	font-size: 14px;
   font-weight: normal;
   background-color: var(--bg-color);
@@ -1283,7 +1293,7 @@ p {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   color: #fff;
 }
 
@@ -1444,7 +1454,7 @@ textarea::-webkit-resizer {
   padding: 10px 0;
   font-size: 15px;
   font-weight: normal;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   color: #f0f0f0;
   letter-spacing: 0.3px;
   text-align: center;
@@ -1503,7 +1513,7 @@ textarea::-webkit-resizer {
   color: #e2e2e2;
   font-size: 15px;
   font-weight: normal;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   line-height: 1;
   -webkit-user-select: text; 
   -moz-user-select: text;
@@ -1518,7 +1528,7 @@ textarea::-webkit-resizer {
 }
 
 .bot-advanced-info {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   margin-top: 10px;
   margin-left: 12px;
   color: #b6b6b6;
@@ -1554,12 +1564,12 @@ textarea::-webkit-resizer {
   color: #646464f7; 
   margin-top: 220px; 
   font-size: 18px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--global-font-family);
 }
 
 .chat-container input {
   background-color: transparent;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
 }
 
 .chat-container select {
@@ -1665,7 +1675,7 @@ textarea::-webkit-resizer {
 }
 
 .signature {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   font-weight: normal;
   color: rgb(143, 139, 139);
@@ -1696,7 +1706,7 @@ textarea::-webkit-resizer {
   border-radius: 12px;
   padding: 18px 18px 16px 18px;
   text-align: center;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
 }
 
 .notice .close-notice-btn {
@@ -1764,7 +1774,7 @@ textarea::-webkit-resizer {
 }
 
 .notice .info-wrapper .text {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   color: #dadada;
   gap: 4px;
@@ -1924,7 +1934,7 @@ textarea::-webkit-resizer {
 .radar-wrap .radar-target .info {
   display: flex;
   flex-direction: column;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   font-weight: normal;
   color: #9e9d9d;
@@ -2012,7 +2022,7 @@ textarea::-webkit-resizer {
   border: 1px solid #4b4b4b50;
   padding: 4px 6px;
   border-radius: 6px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   font-weight: normal;
   margin-left: 5px;
@@ -2024,7 +2034,7 @@ textarea::-webkit-resizer {
   border: 1px solid #4b4b4b50;
   padding: 4px 6px;
   border-radius: 6px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   font-weight: normal;
   margin-left: 5px;
@@ -2058,13 +2068,13 @@ textarea::-webkit-resizer {
 
 .plugins-wrap .list .plugin-card .head .text .name {
   color: #c2c2c2;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   font-weight: bold;
 }
 
 .plugins-wrap .list .plugin-card .head .text .name .status {
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   font-weight: bold;
   margin-left: 5px;
@@ -2075,7 +2085,7 @@ textarea::-webkit-resizer {
 
 .plugins-wrap .list .plugin-card .head .text .meta {
   color: #9e9e9e;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 13px;
   font-weight: normal;
 }
@@ -2100,7 +2110,7 @@ textarea::-webkit-resizer {
   height: 30px;
   width: 120px;
   color: #c7c7c7;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   font-weight: bold;
   transition: border 0.15s ease;
@@ -2120,7 +2130,7 @@ textarea::-webkit-resizer {
   left: 239px;
   width: 750px;
   height: 510px;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   display: none; 
   z-index: 1000;
   border-radius: 8px;
@@ -2154,7 +2164,7 @@ textarea::-webkit-resizer {
 
 .plugin-description .panel .left .name {
   color: #9e9e9e;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 16px;
   font-weight: bold;
 }
@@ -2185,7 +2195,39 @@ textarea::-webkit-resizer {
 
 .plugin-description .description-body p {
   color: #afafaf;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   font-weight: normal;
+}
+
+.interface-settings-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 500px;
+  margin-top: 30px;
+  gap: 50px;
+}
+
+.interface-settings-wrap .section {
+  width: 96%;
+  height: auto;
+  padding: 0 10px;
+}
+
+.interface-settings-wrap .section .header {
+  font-family: var(--global-font-family);
+  font-size: 18px;
+  color: #c9c9c9;
+  font-weight: normal;
+  margin-bottom: 20px;
+}
+
+.interface-settings-wrap .section .options {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  justify-content: left;
+  align-items: start;
 }

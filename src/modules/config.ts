@@ -57,7 +57,7 @@ export function loadConfig(): void {
     }
 
     if (!config) {
-      log('Ошибка загрузки конфига: Файл конфигурации отсутствует или повреждён', 'error');
+      log('Ошибка загрузки конфига: Config not found', 'error');
       return;
     }
 
