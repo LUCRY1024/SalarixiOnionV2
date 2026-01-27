@@ -120,7 +120,7 @@ The client has several large sections, they will be presented below in the table
 
 - **Documentation:** [Docs](./docs/DOCS.md)
 - **FAQ:** [FAQ](./docs/FAQ.md)
-- **Latest Release:** [Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.5-release)
+- **Latest Release:** [Release](https://github.com/nullclyze/SalarixiOnion/releases/tag/v1.0.6-release)
 - **License:** [MIT License](./LICENSE)
 
 ## 💸 Donate

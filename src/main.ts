@@ -691,6 +691,13 @@ class ElementManager {
           root.style.setProperty('--chbx-spec-color', '#494949');
           root.style.setProperty('--chbx-dull-spec-color', '#3f3f3f');
           break;
+        case 'magenta': 
+          root.style.setProperty('--title-color', '#9f23e7');
+          root.style.setProperty('--spec-color', '#9215e6');
+          root.style.setProperty('--dull-spec-color', '#8e13be');
+          root.style.setProperty('--chbx-spec-color', '#9e0b97');
+          root.style.setProperty('--chbx-dull-spec-color', '#960676');
+          break;
       }
     } catch (error) {
       log(`Ошибка изменения темы: ${error}`, 'error');
@@ -978,7 +985,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     log('Инициализация прошла успешно', 'extended');
 
-    //await checkUpdate();
+    await checkUpdate();
   } catch (error) {
     log(`Ошибка инициализации: ${error}`, 'error');
   }

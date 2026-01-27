@@ -1851,7 +1851,7 @@ textarea::-webkit-resizer {
   flex-direction: column;
   width: 300px;
   justify-content: start;
-  align-items: center;
+  align-items: start;
   border: 1px solid #252525;
   border-radius: 6px;
   background-color: #25252518;
@@ -1861,10 +1861,6 @@ textarea::-webkit-resizer {
 
 .cover.radar .auto-save-settings .checkbox-container {
   width: max-content;
-}
-
-.cover.radar .auto-save-settings .checkbox-container .checkmark:after {
-  margin-left: 1px;
 }
 
 .cover.radar .custom-select {
