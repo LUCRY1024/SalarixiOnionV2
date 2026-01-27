@@ -220,7 +220,7 @@ impl ModuleManager {
               let options_clone = o.clone();  
               let nickname = bot.username().clone();
 
-              ScaffoldModule::stop(&nickname);
+              ScaffoldModule::stop(&bot);
 
               if options_clone.state {
                 let task = tokio::spawn(async move {
@@ -229,7 +229,7 @@ impl ModuleManager {
 
                 TASKS.get(&nickname).unwrap().write().unwrap().set_task("scaffold", task);
               } else {
-                ScaffoldModule::stop(&nickname);
+                ScaffoldModule::stop(&bot);
               }
             }
           },

@@ -15,8 +15,10 @@ pub struct ScaffoldModule;
 pub struct ScaffoldOptions {
   pub mode: String,
   pub delay: Option<usize>,
-  pub min_degree_of_gaze: Option<f32>,
-  pub max_degree_of_gaze: Option<f32>,
+  pub min_gaze_degree_x: Option<f32>,
+  pub max_gaze_degree_x: Option<f32>,
+  pub min_gaze_degree_y: Option<f32>,
+  pub max_gaze_degree_y: Option<f32>,
   pub state: bool
 }
 
@@ -27,18 +29,21 @@ impl ScaffoldModule {
     bot.set_direction(inaccurate_direction.0, inaccurate_direction.1);
   }
 
-  fn direct_gaze(bot: &Client, min_x_rot: Option<f32>, max_x_rot: Option<f32>) {
+  fn direct_gaze(bot: &Client, min_x_rot: Option<f32>, max_x_rot: Option<f32>, min_y_rot: Option<f32>, max_y_rot: Option<f32>) {
     let direction = bot.direction();
 
-    let min = if let Some(rot) = min_x_rot { rot } else { 70.0 } as f64;
-    let max = if let Some(rot) = max_x_rot { rot } else { 85.0 } as f64;
+    let min_x = if let Some(rot) = min_x_rot { rot } else { 80.0 } as f64;
+    let max_x = if let Some(rot) = max_x_rot { rot } else { 83.0 } as f64;
 
-    bot.set_direction(direction.0, randfloat(min, max) as f32); 
+    let min_y = if let Some(rot) = min_y_rot { rot } else { direction.0 } as f64;
+    let max_y = if let Some(rot) = max_y_rot { rot } else { direction.0 } as f64;
+
+    bot.set_direction(randfloat(min_y, max_y) as f32, randfloat(min_x, max_x) as f32); 
   }
 
   async fn ninja_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_degree_of_gaze, options.max_degree_of_gaze);
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
 
       let position = bot.position();
       let block_under = BlockPos::new(position.x.floor() as i32, (position.y - 0.5).floor() as i32 , position.z.floor() as i32);
@@ -50,30 +55,17 @@ impl ScaffoldModule {
       if is_air {
         bot.set_crouching(true);
 
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(true); 
-        }
-
-        bot.wait_ticks(randticks(4, 6)).await;
+        bot.wait_ticks(randticks(1, 2)).await;
                       
         bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
-        bot.block_interact(block_under);  
 
-        bot.set_crouching(false);
+        bot.start_use_item();
+
+        bot.wait_ticks(randticks(1, 2)).await;
 
         Self::simulate_inaccuracy(bot, bot.direction());
 
-        bot.wait_ticks(randticks(1, 2)).await;
-
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(false); 
-        }
-
-        bot.wait_ticks(randticks(1, 2)).await;
+        bot.set_crouching(false);
       }
               
       bot.wait_ticks(options.delay.unwrap_or(1)).await;
@@ -82,7 +74,7 @@ impl ScaffoldModule {
 
   async fn god_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_degree_of_gaze, options.max_degree_of_gaze);
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
 
       let position = bot.position();
       let block_under = BlockPos::new(position.x.floor() as i32, (position.y - 0.5).floor() as i32 , position.z.floor() as i32);
@@ -91,27 +83,12 @@ impl ScaffoldModule {
         bot.world().read().get_block_state(block_under).map_or(true, |state| state.is_air())
       };
 
-      if is_air {
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(true); 
-        }
-
-        bot.wait_ticks(randticks(1, 2)).await;
-                      
+      if is_air  {              
         bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
-        bot.block_interact(block_under);  
+
+        bot.start_use_item(); 
 
         Self::simulate_inaccuracy(bot, bot.direction());
-
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(false); 
-        }
-
-        bot.wait_ticks(randticks(1, 2)).await;
       }
               
       bot.wait_ticks(options.delay.unwrap_or(1)).await;
@@ -120,7 +97,7 @@ impl ScaffoldModule {
 
   async fn jump_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_degree_of_gaze, options.max_degree_of_gaze);
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
 
       let position = bot.position();
       let velocity = bot.ecs.lock().get::<Physics>(bot.entity).unwrap().clone().velocity;
@@ -136,26 +113,13 @@ impl ScaffoldModule {
       };
               
       if is_air {  
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(true); 
-        }
-
         bot.jump();
                       
         bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
-        bot.block_interact(block_under);  
+        
+        bot.start_use_item();
 
         Self::simulate_inaccuracy(bot, bot.direction());
-
-        {
-          let mut ecs = bot.ecs.lock(); 
-          let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-          physics.set_on_ground(false); 
-        }
-
-        bot.wait_ticks(randticks(1, 2)).await;
       }  
               
       bot.wait_ticks(options.delay.unwrap_or(1)).await;
@@ -171,7 +135,8 @@ impl ScaffoldModule {
     }
   } 
 
-  pub fn stop(nickname: &String) {
-    TASKS.get(nickname).unwrap().write().unwrap().stop_task("scaffold");
+  pub fn stop(bot: &Client) {
+    TASKS.get(&bot.username()).unwrap().write().unwrap().stop_task("scaffold");
+    bot.set_crouching(false);
   }
 }

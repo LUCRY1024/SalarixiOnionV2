@@ -104,17 +104,19 @@ pub fn get_average_coordinates_of_bots(positions: Vec<Vec3>) -> (f64, f64, f64) 
 // Функция установки velocity по Y
 pub fn set_bot_velocity_y(bot: &Client, velocity_y: f64) {
   let mut ecs = bot.ecs.lock(); 
-  let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();
 
-  physics.velocity.y = velocity_y;
+  if let Some(mut physics) = ecs.get_mut::<Physics>(bot.entity) {
+    physics.velocity.y = velocity_y;
+  }
 } 
 
 // Функция установки параметра on_ground
 pub fn set_bot_on_ground(bot: &Client, on_ground: bool) {
   let mut ecs = bot.ecs.lock(); 
-  let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();
-          
-  physics.set_on_ground(on_ground);
+  
+  if let Some(mut physics) = ecs.get_mut::<Physics>(bot.entity) {
+    physics.set_on_ground(on_ground);
+  }
 }
 
 // Функция конвертировки индекса inventory-слота в индекс hotbar-слота
