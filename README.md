@@ -77,15 +77,23 @@ The client has several large sections, they will be presented below in the table
 
 ![](./images/proxy.png)
 
+![](./images/plugins.png)
+
+![](./images/anti_captcha.png)
+
 ![](./images/control.png)
 
 ![](./images/monitoring.png)
 
+![](./images/monitoring_chat.png)
+
 ![](./images/radar.png)
 
-![](./images/radar-route.png)
+![](./images/radar_route.png)
 
 ![](./images/journal.png)
+
+![](./images/interface.png)
 
 ## 💾 Installation
 
