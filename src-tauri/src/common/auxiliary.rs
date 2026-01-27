@@ -1,8 +1,10 @@
+use azalea::entity::Position;
 use azalea::prelude::*;
 use azalea::Vec3;
 use azalea::core::position::BlockPos; 
 use azalea::entity::Physics;
 use azalea::block::BlockState;
+use bevy_ecs::entity::Entity;
 
 use crate::base::get_flow_manager;
 
@@ -116,7 +118,7 @@ pub fn set_bot_on_ground(bot: &Client, on_ground: bool) {
 }
 
 // Функция конвертировки индекса inventory-слота в индекс hotbar-слота
-pub fn convert_inventory_slot_to_hotbar_slot(slot: u16) -> Option<u8> {
+pub fn convert_inventory_slot_to_hotbar_slot(slot: usize) -> Option<u8> {
   match slot {
     36 => Some(0),
     37 => Some(1),
@@ -150,4 +152,14 @@ pub fn get_player_uuid(nickname: String) -> Option<String> {
   }
 
   None
+}
+
+pub fn get_entity_position(bot: &Client, entity: Entity) -> Vec3 {
+  let position = bot.get_entity_component::<Position>(entity);
+
+  if let Some(pos) = position {
+    return Vec3::new(pos.x, pos.y, pos.z);
+  }
+
+  Vec3::new(0.0, 0.0, 0.0)
 }

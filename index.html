@@ -1338,7 +1338,9 @@
               <div class="custom-select">
                 <label>Цель: </label>
                 <select id="select-bow-aim-target" control="bow-aim" name="target">
-                  <option value="nearest-player">Ближайший игрок</option>
+                  <option value="nearest-player">Игрок</option>
+                  <option value="nearest-monster">Монстр</option>
+                  <option value="nearest-animal">Животное</option>
                   <option value="custom-goal">Своя цель</option>
                 </select>
               </div>
@@ -1352,13 +1354,8 @@
                 </div>
 
                 <div class="form-input">
-                  <label for="bow-aim-slot" class="text">Слот с луком</label>
-                  <input type="number" control="bow-aim" id="bow-aim-slot" placeholder="0-8" name="slot">
-                </div>
-
-                <div class="form-input">
                   <label for="bow-aim-delay" class="text">Задержка в тиках</label>
-                  <input type="number" control="bow-aim" id="bow-aim-delay" placeholder="2" value="2" name="delay">
+                  <input type="number" control="bow-aim" id="bow-aim-delay" placeholder="1" value="1" name="delay">
                 </div>
               </div>
 
@@ -1411,23 +1408,24 @@
             <div class="wrap left">
               <div class="column-wrap" style="width: min-content; gap: 6px;">
                 <div class="custom-select between">
+                  <label>Режим: </label>
+                  <select id="miner-mode-select" control="miner" name="mode">
+                    <option value="default">Обычный</option>
+                    <option value="extended">Расширенный</option>
+                  </select>
+                </div>
+
+                <div class="custom-select between" id="miner-tunnel-select-container" style="display: none;">
                   <label>Тунель: </label>
                   <select control="miner" name="tunnel">
                     <option value="2x2x2">2x2x2</option>
+                    <option value="3x2x2">3x2x2</option>
                     <option value="2x3x3">2x3x3</option>
                     <option value="3x3x3">3x3x3</option>
                   </select>
                 </div>
 
-                <div class="custom-select between">
-                  <label>Инструмент: </label>
-                  <select control="miner" name="tool">
-                    <option value="auto">Авто</option>
-                    <option value="manual">Указать</option>
-                  </select>
-                </div>
-
-                <div class="custom-select between">
+                <div class="custom-select between" id="miner-look-select-container" style="display: none;">
                   <label>Поворот: </label>
                   <select control="miner" name="look">
                     <option value="smooth">Плавный</option>
