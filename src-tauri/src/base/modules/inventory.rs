@@ -2,6 +2,8 @@ use azalea::prelude::*;
 use azalea::inventory::operations::{SwapClick, ThrowClick};
 use serde::{Serialize, Deserialize};
 
+use crate::emit::*;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InventoryModule;
@@ -18,7 +20,14 @@ impl InventoryModule {
     if let Some(s) = options.slot {
       match options.state.as_str() {
         "select" => { 
-          bot.set_selected_hotbar_slot(s as u8);
+          if s <= 8 {
+            bot.set_selected_hotbar_slot(s as u8);
+          } else {
+            emit_event(EventType::Log(LogEventPayload {
+              name: "error".to_string(),
+              message: format!("Бот {} не смог взять слот {} (индекс слота не должен превышать 8)", bot.username(), s)
+            }));
+          }
         },
         "drop" => {
           bot.get_inventory().click(ThrowClick::All { slot: s });

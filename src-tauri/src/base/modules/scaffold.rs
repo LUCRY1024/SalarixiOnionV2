@@ -2,9 +2,11 @@ use azalea::prelude::*;
 use azalea::core::position::BlockPos;
 use azalea::interact::SwingArmEvent;  
 use azalea::entity::Physics;
+use azalea::registry::builtin::ItemKind;
 use serde::{Serialize, Deserialize};
 
 use crate::TASKS;
+use crate::common::{convert_inventory_slot_to_hotbar_slot, find_empty_slot_in_hotbar};
 use crate::tools::*;
 
 
@@ -17,33 +19,189 @@ pub struct ScaffoldOptions {
   pub delay: Option<usize>,
   pub min_gaze_degree_x: Option<f32>,
   pub max_gaze_degree_x: Option<f32>,
-  pub min_gaze_degree_y: Option<f32>,
-  pub max_gaze_degree_y: Option<f32>,
   pub state: bool
 }
 
 impl ScaffoldModule {
+  fn is_block(kind: ItemKind) -> bool {
+    match kind {
+      ItemKind::GrassBlock => { return true; },
+      ItemKind::Podzol => { return true; },
+      ItemKind::Mycelium => { return true; },
+      ItemKind::DirtPath => { return true; },
+      ItemKind::Dirt => { return true; },
+      ItemKind::CoarseDirt => { return true; },
+      ItemKind::RootedDirt => { return true; },
+      ItemKind::Farmland => { return true; },
+      ItemKind::Mud => { return true; },
+      ItemKind::Clay => { return true; },
+      ItemKind::Sandstone => { return true; },
+      ItemKind::RedSandstone => { return true; },
+      ItemKind::Ice => { return true; },
+      ItemKind::PackedIce => { return true; },
+      ItemKind::BlueIce => { return true; },
+      ItemKind::SnowBlock => { return true; },
+      ItemKind::MossBlock => { return true; },
+      ItemKind::PaleMossBlock => { return true; },
+      ItemKind::Stone => { return true; },
+      ItemKind::Deepslate => { return true; },
+      ItemKind::Granite => { return true; },
+      ItemKind::Diorite => { return true; },
+      ItemKind::Andesite => { return true; },
+      ItemKind::Calcite => { return true; },
+      ItemKind::Tuff => { return true; },
+      ItemKind::DripstoneBlock => { return true; },
+      ItemKind::Prismarine => { return true; },
+      ItemKind::Obsidian => { return true; },
+      ItemKind::CryingObsidian => { return true; },
+      ItemKind::Netherrack => { return true; },
+      ItemKind::CrimsonNylium => { return true; },
+      ItemKind::WarpedNylium => { return true; },
+      ItemKind::SoulSoil => { return true; },
+      ItemKind::BoneBlock => { return true; },
+      ItemKind::Blackstone => { return true; },
+      ItemKind::Basalt => { return true; },
+      ItemKind::SmoothBasalt => { return true; },
+      ItemKind::EndStone => { return true; },
+      ItemKind::OakLog => { return true; },
+      ItemKind::SpruceLog => { return true; },
+      ItemKind::BirchLog => { return true; },
+      ItemKind::JungleLog => { return true; },
+      ItemKind::AcaciaLog => { return true; },
+      ItemKind::DarkOakLog => { return true; },
+      ItemKind::MangroveLog => { return true; },
+      ItemKind::CherryLog => { return true; },
+      ItemKind::PaleOakLog => { return true; },
+      ItemKind::MushroomStem => { return true; },
+      ItemKind::CrimsonStem => { return true; },
+      ItemKind::WarpedStem => { return true; },
+      ItemKind::WhiteWool => { return true; },
+      ItemKind::LightGrayWool => { return true; },
+      ItemKind::GrayWool => { return true; },
+      ItemKind::BlackWool => { return true; },
+      ItemKind::BrownWool => { return true; },
+      ItemKind::RedWool => { return true; },
+      ItemKind::OrangeWool => { return true; },
+      ItemKind::YellowWool => { return true; },
+      ItemKind::LimeWool => { return true; },
+      ItemKind::GreenWool => { return true; },
+      ItemKind::CyanWool => { return true; },
+      ItemKind::LightBlueWool => { return true; },
+      ItemKind::BlueWool => { return true; },
+      ItemKind::PurpleWool => { return true; },
+      ItemKind::MagentaWool => { return true; },
+      ItemKind::PinkWool => { return true; },
+      ItemKind::WhiteTerracotta => { return true; },
+      ItemKind::LightGrayTerracotta => { return true; },
+      ItemKind::GrayTerracotta => { return true; },
+      ItemKind::BlackTerracotta => { return true; },
+      ItemKind::BrownTerracotta => { return true; },
+      ItemKind::RedTerracotta => { return true; },
+      ItemKind::OrangeTerracotta => { return true; },
+      ItemKind::YellowTerracotta => { return true; },
+      ItemKind::LimeTerracotta => { return true; },
+      ItemKind::GreenTerracotta => { return true; },
+      ItemKind::CyanTerracotta => { return true; },
+      ItemKind::LightBlueTerracotta => { return true; },
+      ItemKind::BlueTerracotta => { return true; },
+      ItemKind::PurpleTerracotta => { return true; },
+      ItemKind::MagentaTerracotta => { return true; },
+      ItemKind::PinkTerracotta => { return true; },
+      ItemKind::WhiteConcrete => { return true; },
+      ItemKind::LightGrayConcrete => { return true; },
+      ItemKind::GrayConcrete => { return true; },
+      ItemKind::BlackConcrete => { return true; },
+      ItemKind::BrownConcrete => { return true; },
+      ItemKind::RedConcrete => { return true; },
+      ItemKind::OrangeConcrete => { return true; },
+      ItemKind::YellowConcrete => { return true; },
+      ItemKind::LimeConcrete => { return true; },
+      ItemKind::GreenConcrete => { return true; },
+      ItemKind::CyanConcrete => { return true; },
+      ItemKind::LightBlueConcrete => { return true; },
+      ItemKind::BlueConcrete => { return true; },
+      ItemKind::PurpleConcrete => { return true; },
+      ItemKind::MagentaConcrete => { return true; },
+      ItemKind::PinkConcrete => { return true; },
+      _ => {}
+    }
+
+    false
+  }
+
+  async fn take_block(bot: &Client) {
+    let menu = bot.menu();
+
+    let mut block_slot = None;
+
+    for slot in menu.player_slots_range() {
+      if let Some(item) = menu.slot(slot) {
+        if !item.is_empty() {
+          if Self::is_block(item.kind()) {
+            if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
+              if bot.selected_hotbar_slot() == hotbar_slot {
+                return;
+              }
+            }
+
+            block_slot = Some(slot);
+          }
+        }
+      }
+    }
+
+    if let Some(slot) = block_slot {
+      if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
+        bot.set_selected_hotbar_slot(hotbar_slot);
+      } else {
+        let inventory = bot.get_inventory();
+
+        if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
+          inventory.left_click(slot);
+          bot.wait_ticks(randticks(1, 2)).await;
+          inventory.left_click(empty_slot);
+          bot.set_selected_hotbar_slot(empty_slot);
+        } else {
+          let random_slot = randuint(36, 44) as usize;
+
+          inventory.shift_click(random_slot);
+
+          bot.wait_ticks(1).await;
+
+          inventory.left_click(slot);
+          bot.wait_ticks(randticks(1, 2)).await;
+          inventory.left_click(random_slot);
+
+          bot.set_selected_hotbar_slot(convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0));
+        }
+      }
+    }
+  }
+
   fn simulate_inaccuracy(bot: &Client, direction: (f32, f32)) {
     let inaccurate_direction = (direction.0 + randfloat(-0.08, 0.08) as f32, direction.1 + randfloat(-0.08, 0.08) as f32);
 
     bot.set_direction(inaccurate_direction.0, inaccurate_direction.1);
   }
 
-  fn direct_gaze(bot: &Client, min_x_rot: Option<f32>, max_x_rot: Option<f32>, min_y_rot: Option<f32>, max_y_rot: Option<f32>) {
+  fn direct_gaze(bot: &Client, min_x_rot: Option<f32>, max_x_rot: Option<f32>) {
     let direction = bot.direction();
 
     let min_x = if let Some(rot) = min_x_rot { rot } else { 80.0 } as f64;
     let max_x = if let Some(rot) = max_x_rot { rot } else { 83.0 } as f64;
 
-    let min_y = if let Some(rot) = min_y_rot { rot } else { direction.0 } as f64;
-    let max_y = if let Some(rot) = max_y_rot { rot } else { direction.0 } as f64;
-
-    bot.set_direction(randfloat(min_y, max_y) as f32, randfloat(min_x, max_x) as f32); 
+    bot.set_direction(direction.0, randfloat(min_x, max_x) as f32); 
   }
 
-  async fn ninja_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
+  async fn noob_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
+      if !bot.crouching() {
+        bot.set_crouching(true);
+      }
+
+      Self::take_block(bot).await;
+
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
 
       let position = bot.position();
       let block_under = BlockPos::new(position.x.floor() as i32, (position.y - 0.5).floor() as i32 , position.z.floor() as i32);
@@ -52,20 +210,51 @@ impl ScaffoldModule {
         bot.world().read().get_block_state(block_under).map_or(true, |state| state.is_air())
       };
 
-      if is_air {
+      if is_air {    
+        bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
+
+        bot.start_use_item();
+
+        bot.wait_ticks(randticks(2, 4)).await;
+
+        Self::simulate_inaccuracy(bot, bot.direction());
+
+        bot.wait_ticks(randticks(2, 3)).await;
+      }
+              
+      bot.wait_ticks(options.delay.unwrap_or(1)).await;
+    }    
+  }
+
+  async fn ninja_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
+    loop { 
+      Self::take_block(bot).await;
+
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
+
+      let pos = bot.position();
+      let block_under = BlockPos::new(pos.x.floor() as i32, (pos.y - 0.5).floor() as i32 , pos.z.floor() as i32);
+
+      let is_air = {
+        bot.world().read().get_block_state(block_under).map_or(true, |state| state.is_air())
+      };
+
+      if is_air || pos.x - pos.x.floor() > 1.0 || pos.z - pos.z.floor() > 1.0 {
         bot.set_crouching(true);
 
-        bot.wait_ticks(randticks(1, 2)).await;
+        bot.wait_ticks(1).await;
                       
         bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
 
         bot.start_use_item();
 
-        bot.wait_ticks(randticks(1, 2)).await;
+        bot.wait_ticks(randticks(2, 3)).await;
 
         Self::simulate_inaccuracy(bot, bot.direction());
 
         bot.set_crouching(false);
+
+        bot.wait_ticks(1).await;
       }
               
       bot.wait_ticks(options.delay.unwrap_or(1)).await;
@@ -74,7 +263,9 @@ impl ScaffoldModule {
 
   async fn god_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
+      Self::take_block(bot).await;
+
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
 
       let position = bot.position();
       let block_under = BlockPos::new(position.x.floor() as i32, (position.y - 0.5).floor() as i32 , position.z.floor() as i32);
@@ -97,7 +288,9 @@ impl ScaffoldModule {
 
   async fn jump_bridge_scaffold(bot: &Client, options: ScaffoldOptions) {
     loop { 
-      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x, options.min_gaze_degree_y, options.max_gaze_degree_y);
+      Self::take_block(bot).await;
+
+      Self::direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
 
       let position = bot.position();
       let velocity = bot.ecs.lock().get::<Physics>(bot.entity).unwrap().clone().velocity;
@@ -128,6 +321,7 @@ impl ScaffoldModule {
 
   pub async fn enable(bot: &Client, options: ScaffoldOptions) {
     match options.mode.as_str() {
+      "noob-bridge" => { Self::noob_bridge_scaffold(bot, options).await; },
       "ninja-bridge" => { Self::ninja_bridge_scaffold(bot, options).await; },
       "god-bridge" => { Self::god_bridge_scaffold(bot, options).await; },
       "jump-bridge" => { Self::jump_bridge_scaffold(bot, options).await; }
