@@ -7,12 +7,13 @@ use tokio::task::JoinHandle;
 pub static TASKS: Lazy<Arc<BotTaskManager>> = Lazy::new(|| Arc::new(BotTaskManager::new()));
 
 pub struct BotTasks {
-  pub tasks: HashMap<String, Option<JoinHandle<()>>>
+  pub tasks: HashMap<String, Option<JoinHandle<()>>>,
+  pub activity: HashMap<String, bool>
 }
 
 impl BotTasks {
   pub fn new() -> Self {
-    let tasks_vec = vec![
+    let names = vec![
       "spamming", "movement", "jumping", 
       "shifting", "waving", "anti-afk",
       "flight", "killaura", "scaffold",
@@ -21,32 +22,46 @@ impl BotTasks {
     ];
     
     let mut tasks = HashMap::new();
+    let mut activity = HashMap::new();
 
-    for task in tasks_vec {
-      tasks.insert(task.to_string(), None);
+    for name in names {
+      tasks.insert(name.to_string(), None);
+      activity.insert(name.to_string(), false);
     }
 
     Self {
       tasks: tasks,
+      activity: activity
     }
   }
 
-  pub fn set_task(&mut self, task: &str, handle: JoinHandle<()>) {
-    self.tasks.insert(task.to_string(), Some(handle));
+  pub fn get_task_activity(&self, name: &str) -> bool {
+    if let Some(activity) = self.activity.get(name) {
+      return *activity;
+    }
+
+    false
   }
 
-  pub fn stop_task(&mut self, task: &str) {
-    if let Some(o) = self.tasks.get(task) {
-      if let Some(task) = o {
+  pub fn run_task(&mut self, name: &str, handle: JoinHandle<()>) {
+    self.tasks.insert(name.to_string(), Some(handle));
+    self.activity.insert(name.to_string(), true);
+  }
+
+  pub fn stop_task(&mut self, name: &str) {
+    if let Some(handle) = self.tasks.get(name) {
+      if let Some(task) = handle {
         task.abort();
+        self.activity.insert(name.to_string(), false);
       }
     }
   }
 
   pub fn stop_all_tasks(&mut self) {
-    for element in self.tasks.iter().clone() {
-      if let Some(task) = element.1 {
+    for (name, handle) in self.tasks.iter() {
+      if let Some(task) = handle {
         task.abort();
+        self.activity.insert(name.clone(), false);
       }
     }
   }

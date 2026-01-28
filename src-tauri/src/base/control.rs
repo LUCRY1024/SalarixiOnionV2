@@ -45,7 +45,7 @@ impl ModuleManager {
                 });
 
                 if options_clone.mode == ChatMode::Spamming {
-                  TASKS.get(&nickname).unwrap().write().unwrap().set_task("spamming", task);
+                  TASKS.get(&nickname).unwrap().write().unwrap().run_task("spamming", task);
                 }
               } else {
                 if options_clone.mode == ChatMode::Spamming {
@@ -80,7 +80,7 @@ impl ModuleManager {
                   }
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task(&options_clone.action, task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task(&options_clone.action, task);
               } else {
                 ActionModule::stop(&bot, &options_clone.action);
               }
@@ -123,7 +123,7 @@ impl ModuleManager {
                   MovementModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("movement", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("movement", task);
               } else {
                 MovementModule::stop(&bot);
               }
@@ -149,7 +149,7 @@ impl ModuleManager {
                   AntiAfkModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("anti-afk", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("anti-afk", task);
               } else {
                 AntiAfkModule::stop(&bot);
               }
@@ -175,7 +175,7 @@ impl ModuleManager {
                   FlightModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("flight", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("flight", task);
               } else {
                 FlightModule::stop(&nickname);
               }
@@ -201,7 +201,7 @@ impl ModuleManager {
                   KillauraModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("killaura", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("killaura", task);
               } else {
                 KillauraModule::stop(&nickname);
               }
@@ -227,7 +227,7 @@ impl ModuleManager {
                   ScaffoldModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("scaffold", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("scaffold", task);
               } else {
                 ScaffoldModule::stop(&bot);
               }
@@ -253,7 +253,7 @@ impl ModuleManager {
                   AntiFallModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("anti-fall", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("anti-fall", task);
               } else {
                 AntiFallModule::stop(&nickname);
               }
@@ -279,7 +279,7 @@ impl ModuleManager {
                   BowAimModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("bow-aim", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("bow-aim", task);
               } else {
                 BowAimModule::stop(&bot);
               }
@@ -298,16 +298,16 @@ impl ModuleManager {
               let options_clone = o.clone();  
               let nickname = bot.username().clone();
 
-              StealerModule::stop(&nickname);
+              StealerModule::stop(&bot);
 
               if options_clone.state {
                 let task = tokio::spawn(async move {
                   StealerModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("stealer", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("stealer", task);
               } else {
-                StealerModule::stop(&nickname);
+                StealerModule::stop(&bot);
               }
             }
           },
@@ -331,7 +331,7 @@ impl ModuleManager {
                   MinerModule::enable(&bot, options_clone).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().set_task("miner", task);
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("miner", task);
               } else {
                 MinerModule::stop(&bot);
               }

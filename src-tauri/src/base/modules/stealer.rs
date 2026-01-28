@@ -125,7 +125,8 @@ impl StealerModule {
     }
   } 
 
-  pub fn stop(nickname: &String) {
-    TASKS.get(nickname).unwrap().write().unwrap().stop_task("stealer");
+  pub fn stop(bot: &Client) {
+    TASKS.get(&bot.username()).unwrap().write().unwrap().stop_task("stealer");
+    bot.get_inventory().close();
   }
 }

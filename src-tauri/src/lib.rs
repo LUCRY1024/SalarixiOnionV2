@@ -169,7 +169,6 @@ pub fn run() {
             
       Ok(())
     })
-    .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
       exit, launch_bots, stop_bots, 
       get_bot_profiles, send_message, disconnect_bot,

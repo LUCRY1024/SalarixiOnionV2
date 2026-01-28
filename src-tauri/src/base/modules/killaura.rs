@@ -7,8 +7,9 @@ use azalea::world::MinecraftEntityId;
 use serde::{Serialize, Deserialize};
 
 use crate::TASKS;
+use crate::state::STATES;
 use crate::tools::*;
-use crate::common::convert_inventory_slot_to_hotbar_slot;
+use crate::common::{convert_inventory_slot_to_hotbar_slot, find_empty_slot_in_hotbar, find_empty_slot_in_invenotry};
 
 
 #[derive(Debug)]
@@ -88,19 +89,17 @@ impl KillauraModule {
 
     let menu = bot.menu();
 
-    for slot in menu.hotbar_slots_range() {
-      if let Some(item) = menu.slot(slot) {
-        if !item.is_empty() {
-          match item.kind() {
-            ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot), priority: 0 }); },
-            ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot), priority: 1 }); },
-            ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot), priority: 2 }); },
-            ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot), priority: 3 }); },
-            ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot), priority: 4 }); },
-            ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot), priority: 5 }); },
-            ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot), priority: 6 }); },
-            _ => {}
-          }
+    for (slot, item) in menu.slots().iter().enumerate() {
+      if !item.is_empty() {
+        match item.kind() {
+          ItemKind::WoodenSword => { weapons.push(Weapon { slot: Some(slot), priority: 0 }); },
+          ItemKind::GoldenSword => { weapons.push(Weapon { slot: Some(slot), priority: 1 }); },
+          ItemKind::StoneSword => { weapons.push(Weapon { slot: Some(slot), priority: 2 }); },
+          ItemKind::CopperSword => { weapons.push(Weapon { slot: Some(slot), priority: 3 }); },
+          ItemKind::IronSword => { weapons.push(Weapon { slot: Some(slot), priority: 4 }); },
+          ItemKind::DiamondSword => { weapons.push(Weapon { slot: Some(slot), priority: 5 }); },
+          ItemKind::NetheriteSword => { weapons.push(Weapon { slot: Some(slot), priority: 6 }); },
+          _ => {}
         }
       }
     }
@@ -117,6 +116,36 @@ impl KillauraModule {
       if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
         if bot.selected_hotbar_slot() != hotbar_slot {
           bot.set_selected_hotbar_slot(hotbar_slot);
+        }
+      } else {
+        let inventory = bot.get_inventory();
+
+        if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
+          inventory.left_click(slot);
+          bot.wait_ticks(randticks(1, 2)).await;
+          inventory.left_click(empty_slot);
+
+          if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
+            if bot.selected_hotbar_slot() != slot {
+              bot.set_selected_hotbar_slot(slot);
+            }
+          }
+        } else {
+          let random_slot = randuint(36, 44) as usize;
+
+          inventory.shift_click(random_slot);
+
+          bot.wait_ticks(1).await;
+
+          inventory.left_click(slot);
+          bot.wait_ticks(randticks(1, 2)).await;
+          inventory.left_click(random_slot);
+
+          let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
+
+          if bot.selected_hotbar_slot() != hotbar_slot {
+            bot.set_selected_hotbar_slot(hotbar_slot);
+          }
         }
       }
     }
@@ -135,32 +164,51 @@ impl KillauraModule {
     };
 
     loop {
-      if options.settings.as_str() == "adaptive" {
-        Self::auto_weapon(bot).await;
-      } else {
-        if let Some(slot) = config.slot {
-          if slot <= 8 {
-            bot.set_selected_hotbar_slot(slot);
-          }
-        } else {
+      if !STATES.get_plugin_activity(&bot.username(), "auto-eat") && !STATES.get_plugin_activity(&bot.username(), "auto-potion") {
+        if options.settings.as_str() == "adaptive" {
           Self::auto_weapon(bot).await;
+        } else {
+          if let Some(slot) = config.slot {
+            if slot <= 8 {
+              bot.set_selected_hotbar_slot(slot);
+            }
+          } else {
+            Self::auto_weapon(bot).await;
+          }
         }
-      }
 
-      let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
+        let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
 
-      if let Some(entity) = nearest_entity {
-        if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
-          if let Some(entity_id) = bot.get_entity_component::<MinecraftEntityId>(entity) {
-            if bot_id != entity_id {
-              bot.look_at(Self::get_entity_position(bot, entity));
-              bot.wait_ticks(randticks(3, 5)).await;
-              bot.attack(entity);
+        if let Some(entity) = nearest_entity {
+          if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
+            if let Some(entity_id) = bot.get_entity_component::<MinecraftEntityId>(entity) {
+              if bot_id != entity_id {
+                let should_jump = randchance(0.5);
+                let should_shift = randchance(0.5);
+
+                if should_jump {
+                  bot.jump();
+                }
+
+                if should_shift {
+                  bot.set_crouching(true);
+                }
+
+                bot.wait_ticks(randticks(1, 2)).await;
+
+                bot.look_at(Self::get_entity_position(bot, entity));
+                bot.wait_ticks(randticks(3, 5)).await;
+                bot.attack(entity);
+
+                if should_shift {
+                  bot.set_crouching(false);
+                }
+              }
             }
           }
         }
       }
-
+      
       bot.wait_ticks(config.delay).await;
     }
   }
@@ -178,26 +226,28 @@ impl KillauraModule {
     };
 
     loop {
-      if options.settings.as_str() == "adaptive" {
-        Self::auto_weapon(bot).await;
-      } else {
-        if let Some(slot) = config.slot {
-          if slot <= 8 {
-            bot.set_selected_hotbar_slot(slot);
-          }
-        } else {
+      if !STATES.get_plugin_activity(&bot.username(), "auto-eat") && !STATES.get_plugin_activity(&bot.username(), "auto-potion") {
+        if options.settings.as_str() == "adaptive" {
           Self::auto_weapon(bot).await;
+        } else {
+          if let Some(slot) = config.slot {
+            if slot <= 8 {
+              bot.set_selected_hotbar_slot(slot);
+            }
+          } else {
+            Self::auto_weapon(bot).await;
+          }
         }
-      }
 
-      let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
+        let nearest_entity = Self::find_nearest_entity(bot, config.target.clone(), config.distance);
 
-      if let Some(entity) = nearest_entity {
-        if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
-          if let Some(entity_id) = bot.get_entity_component::<MinecraftEntityId>(entity) {
-            if bot_id != entity_id {
-              bot.wait_ticks(randticks(3, 4)).await;
-              bot.attack(entity);
+        if let Some(entity) = nearest_entity {
+          if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
+            if let Some(entity_id) = bot.get_entity_component::<MinecraftEntityId>(entity) {
+              if bot_id != entity_id {
+                bot.wait_ticks(randticks(3, 4)).await;
+                bot.attack(entity);
+              }
             }
           }
         }
