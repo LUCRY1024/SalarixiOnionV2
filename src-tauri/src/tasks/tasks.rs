@@ -95,6 +95,18 @@ impl BotTaskManager {
     map.get(nickname).cloned()
   }
 
+  pub fn get_task_activity(&self, nickname: &String, task: &str) -> bool {
+    let map = self.map.read().unwrap();
+
+    for el in map.iter() {
+      if el.0 == nickname {
+        return el.1.read().unwrap().get_task_activity(task);
+      } 
+    }
+
+    false
+  }
+ 
   pub fn clear(&self) {
     for element in self.map.write().unwrap().iter().clone() {
       element.1.write().unwrap().stop_all_tasks();

@@ -12,14 +12,14 @@ use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
 use crate::state::STATES;
-use crate::tools::{randfloat, randticks, randuint};
-use crate::common::{convert_inventory_slot_to_hotbar_slot, find_empty_slot_in_hotbar, get_bot_physics};
+use crate::tools::{randfloat, randticks};
+use crate::common::{get_bot_physics, move_item_to_hotbar};
 
 
 #[derive(Clone)]
 struct Potion {
   kind: String,
-  slot: Option<u16>,
+  slot: Option<usize>,
   name: PotionKind
 }
 
@@ -53,55 +53,14 @@ impl AutoPotionPlugin {
       let potions = Self::find_potion_in_inventory(bot);
 
       if potions.len() > 0 {
-        let inventory = bot.get_inventory();
-
         if let Some(potion) = Self::get_best_potion(bot, potions) {
           if let Some(slot) = potion.slot {
             if !STATES.get_plugin_activity(&bot.username(), "auto-eat") {
               STATES.set_plugin_activity(&bot.username(), "auto-potion", true);
 
-              if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot as usize) {
-                if bot.selected_hotbar_slot() != hotbar_slot {
-                  bot.set_selected_hotbar_slot(hotbar_slot);
-                }
-
-                Self::use_potion(bot, potion.kind).await;
-              } else {
-                if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
-                  inventory.left_click(slot);
-                  bot.wait_ticks(randticks(1, 2)).await;
-                  inventory.left_click(empty_slot);
-
-                  if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
-                    if bot.selected_hotbar_slot() != slot {
-                      bot.set_selected_hotbar_slot(slot);
-                      bot.wait_ticks(1).await;
-                    }
-
-                    Self::use_potion(bot, potion.kind).await;
-                  }
-                } else {
-                  let random_slot = randuint(36, 44) as usize;
-
-                  inventory.shift_click(random_slot);
-
-                  bot.wait_ticks(1).await;
-
-                  inventory.left_click(slot);
-                  bot.wait_ticks(randticks(1, 2)).await;
-                  inventory.left_click(random_slot);
-
-                  let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
-
-                  if bot.selected_hotbar_slot() != hotbar_slot {
-                    bot.set_selected_hotbar_slot(hotbar_slot);
-                  }
-
-                  bot.wait_ticks(1).await;
-
-                  Self::use_potion(bot, potion.kind).await;
-                }
-              }
+              move_item_to_hotbar(bot, slot).await;
+              bot.wait_ticks(randticks(1, 2)).await;
+              Self::use_potion(bot, potion.kind).await;
 
               STATES.set_plugin_activity(&bot.username(), "auto-potion", false);
             }
@@ -133,11 +92,11 @@ impl AutoPotionPlugin {
         });
       },
       "splash" => {
-        bot.set_direction(bot.direction().0 + randfloat(-5.5, 5.5) as f32, randfloat(87.0, 90.0) as f32);
-
-        bot.wait_ticks(randticks(1, 2)).await;
-
         let direction = bot.direction();
+
+        bot.set_direction(direction.0 + randfloat(-5.5, 5.5) as f32, randfloat(87.0, 90.0) as f32);
+
+        bot.wait_ticks(randticks(7, 9)).await;
 
         bot.write_packet(ServerboundUseItem {
           hand: InteractionHand::MainHand,
@@ -146,7 +105,7 @@ impl AutoPotionPlugin {
           x_rot: direction.1
         });
 
-        bot.wait_ticks(randticks(1, 2)).await;
+        bot.wait_ticks(randticks(2, 5)).await;
 
         bot.set_direction(direction.0 + randfloat(-2.5, 2.5) as f32, direction.1 + randfloat(-2.5, 2.5) as f32);
       },
@@ -168,112 +127,99 @@ impl AutoPotionPlugin {
     let on_ground = physics.on_ground();
     let velocity_y = physics.velocity.y;
 
-    let mut potion = None;
+    let mut best_potion = None;
 
-    if is_in_lava {
-      for p in potions.clone() {
+    for p in potions {
+      if is_in_lava {
         match p.name {
           PotionKind::FireResistance => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           PotionKind::LongFireResistance => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           _ => {}
         }
       }
-    }
 
-    if potion.is_none() && is_in_water {
-      for p in potions.clone() {
+      if best_potion.is_none() && is_in_water {
         match p.name {
           PotionKind::WaterBreathing => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           PotionKind::LongWaterBreathing => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           _ => {}
         }
       }
-    }
 
-    if potion.is_none() && !on_ground && velocity_y < -0.5 {
-      for p in potions.clone() {
+      if best_potion.is_none() && !on_ground && velocity_y < -0.5 {
         match p.name {
           PotionKind::SlowFalling => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           PotionKind::LongSlowFalling => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           _ => {}
         }
       }
-    }
 
-    if potion.is_none() && health.0 <= 8.0 {
-      for p in potions.clone() {
+      if best_potion.is_none() && health.0 <= 8.0 {
         match p.name {
           PotionKind::TurtleMaster => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           PotionKind::LongTurtleMaster => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           PotionKind::StrongTurtleMaster => {
-            potion = Some(p);
-            break;
+            best_potion = Some(p.clone());
           },
           _ => {}
         }
       }
-    }
 
-    if potion.is_none() && health.0 <= 15.0 {
-      for p in potions.clone() {
+      if best_potion.is_none() && health.0 <= 15.0 {
         match p.name {
           PotionKind::Regeneration => {
-            potion = Some(p);
+            best_potion = Some(p);
             break;
           },
           PotionKind::LongRegeneration => {
-            potion = Some(p);
+            best_potion = Some(p);
             break;
           },
           PotionKind::StrongRegeneration => {
-            potion = Some(p);
+            best_potion = Some(p);
             break;
           },
           PotionKind::Healing => {
-            potion = Some(p);
+            best_potion = Some(p);
             break;
           },
           PotionKind::StrongHealing => {
-            potion = Some(p);
+            best_potion = Some(p);
             break;
           },
           _ => {}
         }
       }
+
+      if p.kind.as_str() == "splash" {
+        break;
+      }
     }
 
-    potion
+    best_potion
   }
 
   fn find_potion_in_inventory(bot: &Client) -> Vec<Potion> {
     let mut potion_list = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if let Some(potion) = Self::is_potion(Some(slot as u16), item) {
+      if let Some(potion) = Self::is_potion(Some(slot), item) {
         potion_list.push(potion);
       }
     }
@@ -281,7 +227,7 @@ impl AutoPotionPlugin {
     potion_list
   }
 
-  fn is_potion(slot: Option<u16>, item: &ItemStack) -> Option<Potion> {
+  fn is_potion(slot: Option<usize>, item: &ItemStack) -> Option<Potion> {
     match item.kind() {
       ItemKind::Potion => {
         if let Some(contents) = item.get_component::<PotionContents>() {

@@ -14,7 +14,7 @@ use crate::common::find_empty_slot_in_invenotry;
 #[derive(Debug, Clone)]
 struct Armor {
   part: String,
-  slot: Option<u16>,
+  slot: Option<usize>,
   priority: u8
 }
 
@@ -50,7 +50,7 @@ impl AutoArmorPlugin {
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {  
       if slot > 8 {
-        if let Some(armor) = Self::is_armor(item, Some(slot as u16)) {
+        if let Some(armor) = Self::is_armor(item, Some(slot)) {
           armors.push(armor);
         }
       }
@@ -91,13 +91,13 @@ impl AutoArmorPlugin {
     }
   }
 
-  async fn equip(bot: &Client, armor_slot: u16, target_slot: u16) {
+  async fn equip(bot: &Client, armor_slot: usize, target_slot: usize) {
     STATES.set_plugin_activity(&bot.username(), "auto-armor", true);
 
     let inventory = bot.get_inventory();
 
     if let Some(menu) = inventory.menu() {
-      if let Some(item) = menu.slot(armor_slot as usize) {
+      if let Some(item) = menu.slot(armor_slot) {
         if !item.is_empty() {
           if let Some(empty_slot) = find_empty_slot_in_invenotry(bot) {
             inventory.left_click(armor_slot);
@@ -115,7 +115,7 @@ impl AutoArmorPlugin {
     STATES.set_plugin_activity(&bot.username(), "auto-armor", false);
   }
 
-  fn is_armor(item: &ItemStack, slot: Option<u16>) -> Option<Armor> {
+  fn is_armor(item: &ItemStack, slot: Option<usize>) -> Option<Armor> {
     let mut armor = None;
 
     let helmet = "helmet".to_string();
@@ -235,7 +235,7 @@ impl AutoArmorPlugin {
       };
 
       if let Some(item) = menu.slot(target_slot) {
-        if let Some(current_armor) = Self::is_armor(item, Some(target_slot as u16)) {
+        if let Some(current_armor) = Self::is_armor(item, Some(target_slot)) {
           if armor.part == current_armor.part {
             return armor.priority > current_armor.priority;
           }

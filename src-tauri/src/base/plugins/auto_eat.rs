@@ -1,8 +1,8 @@
 use azalea::entity::metadata::Health;
 use azalea::inventory::ItemStack;
 use azalea::local_player::Hunger;
-use azalea::{BlockPos, prelude::*};
-use azalea::prelude::ContainerClientExt;
+use azalea::prelude::*;
+use azalea::BlockPos;
 use azalea::protocol::packets::game::{ServerboundPlayerAction, ServerboundUseItem};
 use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::registry::builtin::ItemKind;
@@ -12,13 +12,13 @@ use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
 use crate::state::STATES;
-use crate::tools::{randticks, randuint};
-use crate::common::{find_empty_slot_in_hotbar, convert_inventory_slot_to_hotbar_slot};
+use crate::tools::randticks;
+use crate::common::move_item_to_hotbar;
 
 
 #[derive(Clone)]
 struct Food {
-  slot: Option<u16>,
+  slot: Option<usize>,
   priority: u8
 }
 
@@ -52,42 +52,9 @@ impl AutoEatPlugin {
           if !STATES.get_plugin_activity(&bot.username(), "auto-potion") {
             STATES.set_plugin_activity(&bot.username(), "auto-eat", true);
 
-            let inventory = bot.get_inventory();
-
-            if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
-              inventory.left_click(food_slot);
-              bot.wait_ticks(randticks(1, 2)).await;
-              inventory.left_click(empty_slot);
-
-              if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
-                if bot.selected_hotbar_slot() != slot {
-                  bot.set_selected_hotbar_slot(slot);
-                  bot.wait_ticks(1).await;
-                }
-
-                Self::start_eating(bot).await;
-              }
-            } else {
-              let random_slot = randuint(36, 44) as usize;
-
-              inventory.shift_click(random_slot);
-
-              bot.wait_ticks(1).await;
-
-              inventory.left_click(food_slot);
-              bot.wait_ticks(randticks(1, 2)).await;
-              inventory.left_click(random_slot);
-
-              let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
-
-              if bot.selected_hotbar_slot() != hotbar_slot {
-                bot.set_selected_hotbar_slot(hotbar_slot);
-              }
-
-              bot.wait_ticks(1).await;
-
-              Self::start_eating(bot).await;
-            }
+            move_item_to_hotbar(bot, food_slot).await;
+            bot.wait_ticks(randticks(1, 2)).await;
+            Self::start_eating(bot).await;
 
             STATES.set_plugin_activity(&bot.username(), "auto-eat", false);
           }
@@ -187,7 +154,7 @@ impl AutoEatPlugin {
     let mut food_list = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if let Some(food) = Self::is_food(Some(slot as u16), item) {
+      if let Some(food) = Self::is_food(Some(slot), item) {
         food_list.push(food);
       }
     }
@@ -195,7 +162,7 @@ impl AutoEatPlugin {
     food_list
   }
 
-  fn is_food(slot: Option<u16>, item: &ItemStack) -> Option<Food> {
+  fn is_food(slot: Option<usize>, item: &ItemStack) -> Option<Food> {
     match item.kind() {
       ItemKind::GoldenApple => return Some(Food { slot: slot, priority: 3 }),
       ItemKind::EnchantedGoldenApple => return Some(Food { slot: slot, priority: 3 }),

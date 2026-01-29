@@ -40,22 +40,20 @@ impl AutoLookPlugin {
       if let Some(entity_pos) = bot.get_entity_component::<Position>(entity) {
         let nickname = bot.username();
 
-        if let Some(arc) = TASKS.get(&nickname) {
-          if !STATES.get_plugin_activity(&nickname, "auto-potion") && !arc.write().unwrap().get_task_activity("bow-aim") && !arc.write().unwrap().get_task_activity("killaura") && !arc.write().unwrap().get_task_activity("scaffold") && !arc.write().unwrap().get_task_activity("miner") {
-            STATES.set_plugin_activity(&nickname, "auto-look", true);
+        if !STATES.get_plugin_activity(&nickname, "auto-potion") && !STATES.get_plugin_activity(&nickname, "auto-shield") && !TASKS.get_task_activity(&nickname, "bow-aim") && !TASKS.get_task_activity(&nickname, "killaura") && !TASKS.get_task_activity(&nickname, "scaffold") && !TASKS.get_task_activity(&nickname, "miner") {
+          STATES.set_plugin_activity(&nickname, "auto-look", true);
 
-            let pos = Vec3::new(
-              entity_pos.x + randfloat(-0.1, 0.1), 
-              entity_pos.y + randfloat(-0.1, 0.1), 
-              entity_pos.z + randfloat(-0.1, 0.1)
-            );
+          let pos = Vec3::new(
+            entity_pos.x + randfloat(-0.1, 0.1), 
+            entity_pos.y + randfloat(-0.1, 0.1), 
+            entity_pos.z + randfloat(-0.1, 0.1)
+          );
 
-            bot.look_at(pos);
+          bot.look_at(pos);
 
-            bot.wait_ticks(1).await;
+          bot.wait_ticks(1).await;
 
-            STATES.set_plugin_activity(&nickname, "auto-look", false);
-          }
+          STATES.set_plugin_activity(&nickname, "auto-look", false);
         }
       }
     }

@@ -7,7 +7,6 @@ use tokio::time::sleep;
 use crate::base::get_flow_manager;
 use crate::state::STATES;
 use crate::tools::randticks;
-use crate::common::is_this_slot_empty;
 
 
 pub struct AutoTotemPlugin;
@@ -30,19 +29,25 @@ impl AutoTotemPlugin {
   }
 
   pub async fn take_totem(bot: &Client) {
-    if is_this_slot_empty(bot, 45) {
-      for (slot, item) in bot.menu().slots().iter().enumerate(){  
-        if slot != 45 {
-          if item.kind() == ItemKind::TotemOfUndying {
-            STATES.set_plugin_activity(&bot.username(), "auto-totem", true);
-            
-            let inventory = bot.get_inventory();
+    let nickname = bot.username();
 
-            inventory.left_click(slot);
-            bot.wait_ticks(randticks(1, 2)).await;
-            inventory.left_click(45 as usize);
+    if let Some(item) = bot.menu().slot(45) {
+      if item.is_empty() || item.kind() == ItemKind::Shield {
+        if !STATES.get_plugin_activity(&nickname, "auto-shield") {
+          for (slot, item) in bot.menu().slots().iter().enumerate() {  
+            if slot != 45 {
+              if item.kind() == ItemKind::TotemOfUndying {
+                STATES.set_plugin_activity(&nickname, "auto-totem", true);
+                
+                let inventory = bot.get_inventory();
 
-            STATES.set_plugin_activity(&bot.username(), "auto-totem", false);
+                inventory.left_click(slot);
+                bot.wait_ticks(randticks(1, 2)).await;
+                inventory.left_click(45 as usize);
+
+                STATES.set_plugin_activity(&nickname, "auto-totem", false);
+              }
+            }
           }
         }
       }

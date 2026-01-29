@@ -194,7 +194,7 @@ impl ModuleManager {
               let options_clone = o.clone();  
               let nickname = bot.username().clone();
 
-              KillauraModule::stop(&nickname);
+              KillauraModule::stop(&bot);
 
               if options_clone.state {
                 let task = tokio::spawn(async move {
@@ -203,7 +203,7 @@ impl ModuleManager {
 
                 TASKS.get(&nickname).unwrap().write().unwrap().run_task("killaura", task);
               } else {
-                KillauraModule::stop(&nickname);
+                KillauraModule::stop(&bot);
               }
             }
           },
