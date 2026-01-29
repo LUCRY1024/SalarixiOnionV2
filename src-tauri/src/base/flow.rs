@@ -19,6 +19,7 @@ use crate::tools::*;
 use crate::state::{STATES};
 use crate::tasks::TASKS;
 use crate::emit::*;
+use crate::webhook::send_webhook;
 use super::handlers::*;
 
 
@@ -134,6 +135,16 @@ pub fn update_bots_count(action: char) {
 }
 
 
+// Функция получения текущих опций
+pub fn get_current_options() -> Option<LaunchOptions> {
+  if let Some(arc) = get_flow_manager() {
+    return arc.read().options.clone();
+  }
+
+  None
+}
+
+
 // Структура опций запуска
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LaunchOptions {
@@ -162,9 +173,11 @@ pub struct LaunchOptions {
   pub proxy_list: Option<String>,
   pub use_proxy: bool,
   pub use_anti_captcha: bool,
+  pub use_webhook: bool,
   pub use_chat_signing: bool,
   pub skin_settings: SkinSettings,
   pub anti_captcha_settings: AntiCaptchaSettings,
+  pub webhook_settings: WebhookSettings,
   pub plugins: Plugins
 }
 
@@ -190,6 +203,14 @@ pub struct AntiCaptchaOptions {
 pub struct AntiWebCaptchaOptions {
   pub regex: Option<String>,
   pub required_url_part: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WebhookSettings {
+  pub url: Option<String>,
+  pub information: bool,
+  pub data: bool,
+  pub actions: bool
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -232,6 +253,14 @@ impl FlowManager {
     TASKS.clear();
 
     self.active = true;
+
+    if options.use_webhook {
+      send_webhook(options.webhook_settings.url.clone(), format!("Запуск {} ботов на {}...", options.bots_count, options.address));
+    }
+
+    if options.use_webhook && options.webhook_settings.data {
+      send_webhook(options.webhook_settings.url.clone(), format!("Опции запуска: {:#?}", options));
+    }
 
     thread::spawn(move || {
       let rt = tokio::runtime::Runtime::new().unwrap();
@@ -360,6 +389,12 @@ impl FlowManager {
 
     STATES.clear();
     TASKS.clear();
+
+    if let Some(options) = self.options.clone() {
+      if options.use_webhook {
+        send_webhook(options.webhook_settings.url.clone(), format!("{} ботов было остановлено", options.bots_count));
+      }
+    }
 
     ("info".to_string(), format!("Остановка ботов завершена"))
   }

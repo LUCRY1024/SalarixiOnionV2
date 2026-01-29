@@ -107,6 +107,7 @@ async function startBots(): Promise<void> {
   const useAutoLogin = (document.getElementById('use-auto-login') as HTMLInputElement).checked;
   const useProxy = (document.getElementById('use-proxy') as HTMLInputElement).checked;
   const useAntiCaptcha = (document.getElementById('use-anti-captcha') as HTMLInputElement).checked;
+  const useWebhook = (document.getElementById('use-webhook') as HTMLInputElement).checked;
   const useAutoRejoin = (document.getElementById('use-auto-rejoin') as HTMLInputElement).checked;
   const useChatSigning = (document.getElementById('use-chat-signing') as HTMLInputElement).checked;
 
@@ -124,6 +125,18 @@ async function startBots(): Promise<void> {
   } = { 
     regex: (document.getElementById('anti-web-captcha-regex') as HTMLInputElement).value,
     required_url_part: (document.getElementById('anti-web-captcha-required-url-part') as HTMLInputElement).value
+  };
+
+  const webhookOptions: {
+    url: null | string;
+    information: boolean;
+    data: boolean;
+    actions: boolean;
+  } = { 
+    url: (document.getElementById('webhook-url') as HTMLInputElement).value,
+    information: (document.getElementById('use-webhook-information') as HTMLInputElement).checked,
+    data: (document.getElementById('use-webhook-data') as HTMLInputElement).checked,
+    actions: (document.getElementById('use-webhook-actions') as HTMLInputElement).checked
   };
 
   const result = await invoke('launch_bots', { options: {
@@ -151,10 +164,11 @@ async function startBots(): Promise<void> {
     use_auto_register: useAutoRegister,
     use_auto_login: useAutoLogin,
     use_proxy: useProxy,
+    use_anti_captcha: useAntiCaptcha,
+    use_webhook: useWebhook,
     use_auto_rejoin: useAutoRejoin,
     use_chat_signing: useChatSigning,
     proxy_list: proxyList,
-    use_anti_captcha: useAntiCaptcha,
     skin_settings: {
       skin_type: skinType,
       set_skin_command: setSkinCommand,
@@ -166,6 +180,7 @@ async function startBots(): Promise<void> {
         web: antiWebCaptchaOptions
       }
     },
+    webhook_settings: webhookOptions,
     plugins: {
       auto_armor: plugins['auto-armor'].enable,
       auto_totem: plugins['auto-totem'].enable,

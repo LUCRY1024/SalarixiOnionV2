@@ -36,6 +36,13 @@
       }
     },
     { 
+      "tags": ["panel-btn:webhook", "title:webhook"], 
+      "lang": {
+        "ru": "Вебхук",
+        "en": "Webhook"
+      }
+    },
+    { 
       "tags": ["panel-btn:control", "title:control"], 
       "lang": {
         "ru": "Управление",
@@ -614,6 +621,34 @@
       "lang": {
         "ru": "Обязательная часть ссылки",
         "en": "Required URL Part"
+      }
+    },
+    { 
+      "tags": ["label:webhook-link"], 
+      "lang": {
+        "ru": "Ссылка",
+        "en": "Link"
+      }
+    },
+    { 
+      "tags": ["label:webhook-information"], 
+      "lang": {
+        "ru": "Информация",
+        "en": "Information"
+      }
+    },
+    { 
+      "tags": ["label:webhook-data"], 
+      "lang": {
+        "ru": "Данные",
+        "en": "Data"
+      }
+    },
+    { 
+      "tags": ["label:webhook-actions"], 
+      "lang": {
+        "ru": "Действия",
+        "en": "Actions"
       }
     },
     { 

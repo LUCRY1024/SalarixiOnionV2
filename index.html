@@ -96,6 +96,13 @@
       <span class="text" translator-tag="panel-btn:anti-captcha">Анти-Капча</span>
     </button>
 
+    <button class="panel-btn" id="webhook" path="webhook-container">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left-right" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5"/>
+      </svg>
+      <span class="text" translator-tag="panel-btn:webhook">Вебхук</span>
+    </button>
+
     <div class="separator"></div>
 
     <button class="panel-btn" id="control" path="control-container">
@@ -183,8 +190,6 @@
       </svg>
       <span class="text" translator-tag="panel-btn:about">О проекте</span>
     </button>
-
-    <div class="separator"></div>
   </div>
 
   <div class="main-container">
@@ -438,6 +443,12 @@
               <input type="checkbox" name="useAntiCaptcha" id="use-anti-captcha" keep="true">
               <span class="checkmark"></span>
               <span translator-tag="checkbox:anti-captcha">Использовать анти-капчу</span>
+            </label>
+
+            <label class="checkbox-container">
+              <input type="checkbox" name="useWebhook" id="use-webhook" keep="true">
+              <span class="checkmark"></span>
+              <span translator-tag="checkbox:webhook">Использовать вебхук</span>
             </label>
 
             <div class="simple-sep"></div>
@@ -823,6 +834,35 @@
             <input type="text" id="anti-web-captcha-required-url-part" placeholder="anti-bot" name="required_url_part">
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="form-container" id="webhook-container" style="display: none;" global="true">
+      <h1 class="title" translator-tag="title:webhook">Вебхук</h1>
+
+      <div class="form-input">
+        <label for="webhook-url" class="text" translator-tag="label:webhook-link">Ссылка</label>
+        <input type="text" id="webhook-url" placeholder="https://discord.com/api/webhooks/..." keep="true">
+      </div>
+
+      <div class="checkbox-group" style="width: 300px; margin-top: 20px; border-radius: 6px; border: 1px solid #333333; padding: 10px 0;">
+        <label class="checkbox-container">
+          <input type="checkbox" id="use-webhook-information" keep="true">
+          <span class="checkmark"></span>
+          <span translator-tag="label:webhook-information">Информация</span>
+        </label>
+
+        <label class="checkbox-container">
+          <input type="checkbox" id="use-webhook-data" keep="true">
+          <span class="checkmark"></span>
+          <span translator-tag="label:webhook-data">Данные</span>
+        </label>
+
+        <label class="checkbox-container">
+          <input type="checkbox" id="use-webhook-actions" keep="true">
+          <span class="checkmark"></span>
+          <span translator-tag="label:webhook-actions">Действия</span>
+        </label>
       </div>
     </div>
 

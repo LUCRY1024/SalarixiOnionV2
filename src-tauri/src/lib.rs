@@ -6,6 +6,7 @@ mod radar;
 mod state;
 mod tasks;
 mod quick;
+mod webhook;
 
 use crate::base::*;
 use crate::quick::QuickTaskManager;
@@ -13,6 +14,7 @@ use crate::radar::*;
 use crate::state::{STATES, BotState};
 use crate::tasks::*;
 use crate::emit::*;
+use crate::webhook::*;
 
 
 // Функция запуска ботов
@@ -127,6 +129,12 @@ fn get_memory_usage() -> f64 {
 // Функция управления ботами
 #[tauri::command]
 async fn control(name: String, options: serde_json::Value, group: String) {
+  if let Some(opts) = get_current_options() {
+    if opts.use_webhook && opts.webhook_settings.actions {
+      send_webhook(opts.webhook_settings.url, format!("Управление '{}' | Опции: {}", name, options));
+    }
+  }
+
   emit_event(EventType::Log(LogEventPayload { 
     name: "extended".to_string(), 
     message: format!("Управление '{}' | Опции: {}", name, options)
@@ -138,6 +146,12 @@ async fn control(name: String, options: serde_json::Value, group: String) {
 // Функция выполнения быстрых задач
 #[tauri::command]
 async fn quick_task(name: String) {
+  if let Some(opts) = get_current_options() {
+    if opts.use_webhook && opts.webhook_settings.actions {
+      send_webhook(opts.webhook_settings.url, format!("Быстрая задача '{}'", name));
+    }
+  }
+
   emit_event(EventType::Log(LogEventPayload { 
     name: "extended".to_string(), 
     message: format!("Быстрая задача '{}'", name)
