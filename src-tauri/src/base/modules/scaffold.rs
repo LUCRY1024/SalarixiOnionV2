@@ -1,12 +1,11 @@
 use azalea::prelude::*;
 use azalea::core::position::BlockPos;
-use azalea::interact::SwingArmEvent;  
 use azalea::entity::Physics;
 use azalea::registry::builtin::ItemKind;
 use serde::{Serialize, Deserialize};
 
 use crate::TASKS;
-use crate::common::{convert_inventory_slot_to_hotbar_slot, find_empty_slot_in_hotbar};
+use crate::common::{convert_inventory_slot_to_hotbar_slot, move_item_to_hotbar, swing_arm};
 use crate::tools::*;
 
 
@@ -151,30 +150,7 @@ impl ScaffoldModule {
     }
 
     if let Some(slot) = block_slot {
-      if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
-        bot.set_selected_hotbar_slot(hotbar_slot);
-      } else {
-        let inventory = bot.get_inventory();
-
-        if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
-          inventory.left_click(slot);
-          bot.wait_ticks(randticks(1, 2)).await;
-          inventory.left_click(empty_slot);
-          bot.set_selected_hotbar_slot(empty_slot);
-        } else {
-          let random_slot = randuint(36, 44) as usize;
-
-          inventory.shift_click(random_slot);
-
-          bot.wait_ticks(1).await;
-
-          inventory.left_click(slot);
-          bot.wait_ticks(randticks(1, 2)).await;
-          inventory.left_click(random_slot);
-
-          bot.set_selected_hotbar_slot(convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0));
-        }
-      }
+      move_item_to_hotbar(bot, slot).await;
     }
   }
 
@@ -211,7 +187,7 @@ impl ScaffoldModule {
       };
 
       if is_air {    
-        bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
+        swing_arm(bot);
 
         bot.start_use_item();
 
@@ -244,7 +220,7 @@ impl ScaffoldModule {
 
         bot.wait_ticks(1).await;
                       
-        bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
+        swing_arm(bot);
 
         bot.start_use_item();
 
@@ -275,7 +251,7 @@ impl ScaffoldModule {
       };
 
       if is_air  {              
-        bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
+        swing_arm(bot);
 
         bot.start_use_item(); 
 
@@ -308,7 +284,7 @@ impl ScaffoldModule {
       if is_air {  
         bot.jump();
                       
-        bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
+        swing_arm(bot);
         
         bot.start_use_item();
 

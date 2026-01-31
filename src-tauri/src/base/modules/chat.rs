@@ -14,15 +14,9 @@ use crate::radar::RadarManager;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatModule;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ChatMode {
-  Message,
-  Spamming
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatOptions {
-  pub mode: ChatMode,
+  pub mode: String,
   pub message: String,
   pub use_global_chat: bool,
   pub use_text_mutation: bool,

@@ -613,7 +613,7 @@ p {
 .control-group {
   position: absolute;
   left: 0;
-  bottom: 30px;
+  bottom: 10px;
   height: 30px;
   width: 180px;
   z-index: 1;
@@ -1985,7 +1985,7 @@ textarea::-webkit-resizer {
   height: 85px;
   max-height: 85px;
   width: 98%;
-  border: 1px solid #272727;
+  border: 1px solid #303030;
   border-radius: 6px;
 }
 

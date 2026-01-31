@@ -47,7 +47,9 @@ const pressedKeys: { [x: string]: boolean } = {
   z: false
 };
 
-const plugins: { [x: string]: { enable: boolean, date: string } } = {
+export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield'];
+
+export const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
     enable: false,
     date: '23.01.2026'
@@ -76,6 +78,31 @@ const plugins: { [x: string]: { enable: boolean, date: string } } = {
 
 let globalContainers: Array<{ id: string; el: HTMLElement }> = [];
 let controlContainers: Array<{ id: string; el: HTMLElement }> = [];
+
+export function updatePluginState(name: string | null, state: boolean) {
+  if (name && process === 'sleep') {
+    plugins[name].enable = state;
+
+    localStorage.setItem(`plugin-state:${name}`, String(state));
+
+    const status = document.getElementById(`${name}-status`) as HTMLElement;
+    const toggler = document.getElementById(`${name}-toggler`) as HTMLButtonElement;
+
+    if (state) {
+      status.innerText = 'Включен';
+
+      toggler.setAttribute('state', 'false');
+      toggler.style.color = '#4ed618';
+      toggler.innerText = 'Включен';
+    } else {
+      status.innerText = 'Выключен';
+
+      toggler.setAttribute('state', 'true');
+      toggler.style.color = '#d61818';
+      toggler.innerText = 'Выключен';
+    }
+  }
+}
 
 async function startBots(): Promise<void> {
   log('Запуск ботов на сервер...', 'info');
@@ -280,27 +307,7 @@ class ElementManager {
     document.querySelectorAll('[plugin-toggler="true"]').forEach(t => t.addEventListener('click', () => {
       const name = t.getAttribute('plugin-name');
       const state = t.getAttribute('state') === 'true';
-      
-      if (name && process === 'sleep') {
-        plugins[name].enable = state;
-
-        const status = document.getElementById(`${name}-status`) as HTMLElement;
-        const button = document.getElementById(`${name}-toggler`) as HTMLButtonElement;
-
-        if (state) {
-          status.innerText = 'Включен';
-
-          button.setAttribute('state', 'false');
-          button.style.color = '#4ed618';
-          button.innerText = 'Включен';
-        } else {
-          status.innerText = 'Выключен';
-
-          button.setAttribute('state', 'true');
-          button.style.color = '#d61818';
-          button.innerText = 'Выключен';
-        }
-      }
+      updatePluginState(name, state);
     }));  
 
     document.querySelectorAll('[plugin-open-description="true"]').forEach(e => e.addEventListener('click', () => {
@@ -494,7 +501,7 @@ class ElementManager {
       const chatDefaultBtnsContainer = document.getElementById('chat-default-btns-container') as HTMLElement;
       const chatSpammingBtnsContainer = document.getElementById('chat-spamming-btns-container') as HTMLElement;
 
-      if (this.value === 'Spamming') {
+      if (this.value === 'spamming') {
         chatSpammingChbxContainer.style.display = 'flex';
         chatSpammingInputContainer.style.display = 'flex';
         chatSpammingBtnsContainer.style.display = 'flex';

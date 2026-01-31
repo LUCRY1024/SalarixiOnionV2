@@ -1,10 +1,10 @@
 use azalea::prelude::*;
-use azalea::interact::SwingArmEvent;  
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::TASKS;
+use crate::common::swing_arm;
 use crate::tools::*;
 
 
@@ -71,8 +71,7 @@ impl ActionModule {
           sleep(Duration::from_millis(randuint(300, 800))).await;
         }
 
-        let mut ecs = bot.ecs.lock();  
-        ecs.trigger(SwingArmEvent { entity: bot.entity });
+        swing_arm(bot);
       }
     } else {
       if !options.use_sync {
@@ -80,10 +79,7 @@ impl ActionModule {
       }
 
       loop {
-        { 
-          let mut ecs = bot.ecs.lock();  
-          ecs.trigger(SwingArmEvent { entity: bot.entity });
-        }
+        swing_arm(bot);
 
         sleep(Duration::from_millis(300)).await;
       }

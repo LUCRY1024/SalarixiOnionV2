@@ -1,3 +1,4 @@
+use azalea::auto_reconnect::AutoReconnectDelay;
 use azalea::prelude::*;
 use azalea::swarm::*;
 use azalea::app::AppExit;
@@ -274,6 +275,8 @@ impl FlowManager {
 
         if !options.use_auto_rejoin {
           plugins = plugins.disable::<azalea::auto_reconnect::AutoReconnectPlugin>();
+        } else {
+          AutoReconnectDelay::new(Duration::from_millis(options.rejoin_delay));
         }
 
         if !options.use_chat_signing {
@@ -291,7 +294,6 @@ impl FlowManager {
             .add_plugins(azalea::bot::DefaultBotPlugins)
             .add_plugins(azalea::swarm::DefaultSwarmPlugins)
             .join_delay(Duration::from_millis(options.join_delay))
-            .reconnect_after(Duration::from_millis(options.rejoin_delay))
             .set_swarm_handler(swarm_handler)
             .set_handler(single_handler);
 

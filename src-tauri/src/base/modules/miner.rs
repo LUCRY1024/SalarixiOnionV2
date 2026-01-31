@@ -1,7 +1,6 @@
 use azalea::prelude::*;
 use azalea::Vec3;
 use azalea::WalkDirection;
-use azalea::block::BlockState;
 use azalea::core::position::BlockPos;
 use azalea::auto_tool::best_tool_in_hotbar_for_block;
 use serde::{Serialize, Deserialize};
@@ -28,19 +27,11 @@ pub struct MinerOptions {
 }
 
 impl MinerModule {
-  fn is_breakable_block(state: BlockState) -> bool {
-    let unbreakable_blocks = vec![
+  fn is_breakable_block(block_id: u16) -> bool {
+    return vec![
       86, 88, 87, 89, 94, 0,
       110, 104, 106, 102, 108
-    ];
-
-    for id in unbreakable_blocks {
-      if state.id() == id {
-        return false;
-      }
-    }
-
-    true
+    ].contains(&block_id);
   }
 
   fn can_reach_block(eye_pos: Vec3, block_pos: BlockPos) -> bool {
@@ -102,7 +93,7 @@ impl MinerModule {
   async fn move_forward(bot: &Client, territory: Vec<BlockPos>) {
     for block_pos in territory {
       if let Some(state) = get_block_state(bot, block_pos) {
-        if !state.is_air() && Self::is_breakable_block(state) {
+        if !state.is_air() && Self::is_breakable_block(state.id()) {
           return;
         }
       }
@@ -193,7 +184,7 @@ impl MinerModule {
           let block_pos = BlockPos::new(pos.x, pos.y + height, pos.z);
           
           if let Some(state) = get_block_state(bot, block_pos) {
-            if !state.is_air() && Self::is_breakable_block(state) && Self::can_reach_block(bot.eye_position(), block_pos) {
+            if !state.is_air() && Self::is_breakable_block(state.id()) && Self::can_reach_block(bot.eye_position(), block_pos) {
               let should_shift = randchance(0.2);
 
               if should_shift {
@@ -223,7 +214,7 @@ impl MinerModule {
 
               loop {
                 if let Some(s) = get_block_state(bot, block_pos) {
-                  if state.is_air() || !Self::is_breakable_block(s) {
+                  if state.is_air() || !Self::is_breakable_block(s.id()) {
                     break;
                   }
                 } else {
@@ -240,7 +231,7 @@ impl MinerModule {
               sleep(Duration::from_millis(randuint(50, 100))).await;
 
               if let Some(s) = get_block_state(bot, block_pos) {
-                if !s.is_air() || Self::is_breakable_block(s) {
+                if !s.is_air() || Self::is_breakable_block(s.id()) {
                   bot.walk(WalkDirection::Backward);
                   bot.wait_ticks(randticks(1, 2)).await;
                   bot.walk(WalkDirection::None);

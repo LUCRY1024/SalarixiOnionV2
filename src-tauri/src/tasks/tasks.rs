@@ -18,7 +18,7 @@ impl BotTasks {
       "shifting", "waving", "anti-afk",
       "flight", "killaura", "scaffold",
       "anti-fall", "bow-aim", "stealer",
-      "miner"
+      "miner", "farmer"
     ];
     
     let mut tasks = HashMap::new();

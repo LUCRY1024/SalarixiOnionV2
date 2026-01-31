@@ -32,23 +32,24 @@ impl ModuleManager {
               let options_task = o.clone();
               let nickname = bot.username().clone();
 
-              if o.mode == ChatMode::Spamming {
+              if o.mode.as_str() == "spamming" {
                 ChatModule::stop(&bot.username());
               }
 
               if options_clone.state {
                 let task = tokio::spawn(async move {
-                  match options_task.mode {
-                    ChatMode::Message => { let _ = ChatModule::message(&bot, options_task).await; },
-                    ChatMode::Spamming => { let _ = ChatModule::spamming(&bot, options_task).await; }
+                  match options_task.mode.as_str() {
+                    "message" => { let _ = ChatModule::message(&bot, options_task).await; },
+                    "spamming" => { let _ = ChatModule::spamming(&bot, options_task).await; },
+                    _ => {}
                   }
                 });
 
-                if options_clone.mode == ChatMode::Spamming {
+                if options_clone.mode.as_str() == "spamming" {
                   TASKS.get(&nickname).unwrap().write().unwrap().run_task("spamming", task);
                 }
               } else {
-                if options_clone.mode == ChatMode::Spamming {
+                if options_clone.mode.as_str() == "spamming" {
                   ChatModule::stop(&nickname);
                 }
               }
@@ -334,6 +335,32 @@ impl ModuleManager {
                 TASKS.get(&nickname).unwrap().write().unwrap().run_task("miner", task);
               } else {
                 MinerModule::stop(&bot);
+              }
+            }
+          },
+          "farmer" => {
+            let o: FarmerOptions = serde_json::from_value(options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
+
+            for bot in bots.into_values() {
+              if let Some(state) = STATES.get(&bot.username()) {
+                if state.read().unwrap().group != group {
+                  continue;
+                }
+              }
+              
+              let options_clone = o.clone();  
+              let nickname = bot.username().clone();
+
+              FarmerModule::stop(&bot);
+
+              if options_clone.state {
+                let task = tokio::spawn(async move {
+                  FarmerModule::enable(&bot, options_clone).await;
+                });
+
+                TASKS.get(&nickname).unwrap().write().unwrap().run_task("farmer", task);
+              } else {
+                FarmerModule::stop(&bot);
               }
             }
           },

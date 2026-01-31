@@ -5,6 +5,7 @@ use azalea::container::ContainerHandle;
 use serde::{Serialize, Deserialize};
 
 use crate::TASKS;
+use crate::common::get_block_state;
 use crate::tools::*;
 
 
@@ -23,36 +24,18 @@ impl StealerModule {
   fn check_block_id(block_id: u16, target: &String) -> bool {
     match target.as_str() {
       "chest" => {
-        let id_list = vec![3793, 3787, 3805, 3799];
-
-        for id in id_list {
-          if block_id == id {
-            return true;
-          }
-        }
+        return vec![3793, 3787, 3805, 3799].contains(&block_id);
       },
       "barrel" => {
-        let id_list = vec![20547, 20543, 20541, 20549, 20545];
-
-        for id in id_list {
-          if block_id == id {
-            return true;
-          }
-        }
+        return vec![20547, 20543, 20541, 20549, 20545].contains(&block_id);
       },
       "shulker" => {
-        let id_list = vec![
+        return vec![
           14666, 14672, 14678, 14720, 
           14756, 14714, 14762, 14744,
           14702, 14696, 14708, 14750,
           14684, 14726, 14738, 14732
-        ];
-
-        for id in id_list {
-          if block_id == id {
-            return true;
-          }
-        }
+        ].contains(&block_id);
       },
       _ => {}
     }
@@ -62,9 +45,6 @@ impl StealerModule {
 
   fn find_nearest_targets(bot: &Client, center: Vec3, target: &String, radius: i32) -> Vec<azalea::BlockPos> {
     let mut positions = Vec::new();  
-
-    let world_clone = bot.world();
-    let world = world_clone.read();
         
     for x in -radius..=radius {  
       for y in -radius..=radius {  
@@ -75,10 +55,8 @@ impl StealerModule {
             (center.z as i32 + z) as i32,  
           );  
                     
-          if let Some(block_state) = world.get_block_state(block_pos) {  
-            let block_id = block_state.id();  
-
-            if Self::check_block_id(block_id, target) {  
+          if let Some(state) = get_block_state(bot, block_pos) {  
+            if Self::check_block_id(state.id(), target) {  
               positions.push(block_pos);  
             }  
           } 

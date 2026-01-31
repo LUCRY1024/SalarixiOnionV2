@@ -10,6 +10,7 @@ mod anti_fall;
 mod bow_aim;
 mod stealer;
 mod miner;
+mod farmer;
 
 pub use chat::*;
 pub use action::*;
@@ -23,3 +24,4 @@ pub use anti_fall::*;
 pub use bow_aim::*;
 pub use stealer::*;
 pub use miner::*;
+pub use farmer::*;

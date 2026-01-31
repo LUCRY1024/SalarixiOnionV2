@@ -6,6 +6,8 @@ use azalea::Vec3;
 use azalea::core::position::BlockPos; 
 use azalea::entity::Physics;
 use azalea::block::BlockState;
+use azalea::protocol::packets::game::ServerboundSwing;
+use azalea::protocol::packets::game::s_interact::InteractionHand;
 use bevy_ecs::entity::Entity;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -41,17 +43,6 @@ pub fn find_empty_slot_in_hotbar(bot: &Client) -> Option<u8> {
   }
 
   None
-}
-
-// Функция проверки слота на наличие предмета
-pub fn is_this_slot_empty(bot: &Client, slot: usize) -> bool {
-  if let Some(item) = bot.menu().slot(slot) {
-    if !item.is_empty() {
-      return false;
-    }
-  }
-
-  true
 }
 
 // Функция получения физики бота
@@ -233,4 +224,11 @@ pub fn run(bot: &Client, direction: SprintDirection) {
   if STATES.can_walk(&bot.username()) {
     bot.sprint(direction);
   }
+}
+
+// Функция отправки пакета SwingArm
+pub fn swing_arm(bot: &Client) {
+  bot.write_packet(ServerboundSwing {
+    hand: InteractionHand::MainHand
+  });
 }

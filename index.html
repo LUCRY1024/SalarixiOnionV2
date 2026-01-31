@@ -990,6 +990,11 @@
             <span class="tag">‒</span>
             <span class="text" translator-tag="control:miner">Майнер</span>
           </button>
+
+          <button class="control-btn" id="control-farmer" path="control-farmer-container">
+            <span class="tag">‒</span>
+            <span class="text" translator-tag="control:farmer">Фермер</span>
+          </button>
         </div>
       </div>
 
@@ -1002,8 +1007,8 @@
               <div class="custom-select">
                 <label>Режим: </label>
                 <select id="chat-mode" control="chat" name="mode">
-                  <option value="Message">Сообщение</option>
-                  <option value="Spamming">Спамминг</option>
+                  <option value="message">Сообщение</option>
+                  <option value="spamming">Спамминг</option>
                 </select>
               </div>
 
@@ -1254,18 +1259,19 @@
                 <select id="select-anti-afk-type" control="anti-afk" name="mode">
                   <option value="minimal">Минимальный</option>
                   <option value="normal">Нормальный</option>
+                  <option value="advanced">Продвинутый</option>
                 </select>
               </div>
 
               <div class="input-wrap">
                 <div class="form-input">
                   <label for="anti-afk-min-delay" class="text">Задержка (минимум)</label>
-                  <input type="number" control="anti-afk" id="anti-afk-min-delay" placeholder="2000" value="2000" name="min_delay">
+                  <input type="number" control="anti-afk" id="anti-afk-min-delay" placeholder="1000" value="1000" name="min_delay">
                 </div>
 
                 <div class="form-input">
                   <label for="anti-afk-max-delay" class="text">Задержка (максимум)</label>
-                  <input type="number" control="anti-afk" id="anti-afk-max-delay" placeholder="5000" value="5000" name="max_delay">
+                  <input type="number" control="anti-afk" id="anti-afk-max-delay" placeholder="2500" value="2500" name="max_delay">
                 </div>
               </div>
 
@@ -1656,6 +1662,27 @@
               <div class="btn-group-flex" style="margin-top: 25px;">
                 <button class="btn green toggler" control-toggler="true" name="miner" state="true">Старт</button>
                 <button class="btn red toggler" control-toggler="true" name="miner" state="false">Стоп</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-container" id="control-farmer-container" style="display: none;" sector="true">
+          <h1 class="header" translator-tag="header:farmer">Управление / Фермер</h1>
+
+          <div class="columns">
+            <div class="wrap left">
+              <div class="custom-select" id="farmer-mode-select-container">
+                <label>Режим: </label>
+                <select control="farmer" name="mode">
+                  <option value="normal">Нормальный</option>
+                  <option value="quick">Быстрый</option>
+                </select>
+              </div>
+
+              <div class="btn-group-flex" style="margin-top: 25px;">
+                <button class="btn green toggler" control-toggler="true" name="farmer" state="true">Старт</button>
+                <button class="btn red toggler" control-toggler="true" name="farmer" state="false">Стоп</button>
               </div>
             </div>
           </div>

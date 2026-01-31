@@ -1,4 +1,5 @@
 import { log } from '../logger';
+import { pluginList, updatePluginState } from '../main';
 
 
 interface ConfigElement {
@@ -71,6 +72,11 @@ export function loadConfig(): void {
             break;
         }
       }
+    }
+
+    for (const name of pluginList) {
+      const state = localStorage.getItem(`plugin-state:${name}`) === 'true';
+      updatePluginState(name, state);
     }
 
     log('Конфиг успешно загружен', 'system');
