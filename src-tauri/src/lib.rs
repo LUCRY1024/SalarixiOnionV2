@@ -39,6 +39,14 @@ async fn launch_bots(options: LaunchOptions) -> (String, String) {
 #[tauri::command(async)]
 async fn stop_bots() -> (String, String) {
   if let Some(arc) = get_flow_manager() {
+    let active_bots_count = if let Some(arc) = get_flow_manager() {
+      arc.read().bots_count
+    } else {
+      0
+    };
+
+    emit_message("Система", format!("Остановка {} ботов...", active_bots_count));
+
     return arc.write().stop();
   } else {
     return ("error".to_string(), format!("FlowManager не инициализирован"));
@@ -131,14 +139,16 @@ fn get_memory_usage() -> f64 {
 async fn control(name: String, options: serde_json::Value, group: String) {
   if let Some(opts) = get_current_options() {
     if opts.use_webhook && opts.webhook_settings.actions {
-      send_webhook(opts.webhook_settings.url, format!("Управление '{}' | Опции: {}", name, options));
+      send_webhook(opts.webhook_settings.url, format!("Группа ботов с названием '{}' приняла команду '{}'. Полученные опции: {}", group, name, options));
     }
   }
 
   emit_event(EventType::Log(LogEventPayload { 
     name: "extended".to_string(), 
-    message: format!("Управление '{}' | Опции: {}", name, options)
+    message: format!("Группа ботов с названием '{}' приняла команду '{}'. Полученные опции: {}", group, name, options)
   }));
+
+  emit_message("Управление", format!("Группа ботов с названием '{}' приняла команду '{}'", group, name));
 
   ModuleManager::control(name, options, group).await;
 }
@@ -156,6 +166,14 @@ async fn quick_task(name: String) {
     name: "extended".to_string(), 
     message: format!("Быстрая задача '{}'", name)
   }));
+
+  let active_bots_count = if let Some(arc) = get_flow_manager() {
+    arc.read().bots_count
+  } else {
+    0
+  };
+
+  emit_message("Быстрая задача", format!("{} ботов получили быструю задачу '{}'", active_bots_count, name));
 
   QuickTaskManager::execute(name).await;
 }

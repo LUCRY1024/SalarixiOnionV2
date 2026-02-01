@@ -10,6 +10,7 @@ import { ChartManager } from './modules/chart';
 import { MonitoringManager } from './modules/monitoring';
 import { RadarManager } from './modules/radar';
 import { translate, Language } from './modules/translator';
+import { changeMessagesVisibility, spawnMessage } from './message';
 
 
 Chart.register(...registerables);
@@ -109,6 +110,7 @@ async function startBots(): Promise<void> {
 
   if (process === 'active') {
     log('Запуск невозможен, существуют активные боты', 'warning');
+    spawnMessage('Предупреждение', `Запуск невозможен, существуют активные боты`);
     return;
   }
 
@@ -174,6 +176,8 @@ async function startBots(): Promise<void> {
     data: (document.getElementById('use-webhook-data') as HTMLInputElement).checked,
     actions: (document.getElementById('use-webhook-actions') as HTMLInputElement).checked
   };
+
+  spawnMessage('Cистема', `Запуск ${botsCount} ботов с версией ${version} на сервер ${address}...`);
 
   const result = await invoke('launch_bots', { options: {
     address: address || 'localhost',
@@ -658,6 +662,10 @@ class ElementManager {
       this.setInterfaceTheme((document.getElementById('interface-theme') as HTMLSelectElement).value);
     });
 
+    document.getElementById('interface-show-messages')?.addEventListener('change', () => {
+      this.setInterfaceShowMessages((document.getElementById('interface-show-messages') as HTMLSelectElement).value);
+    });
+
     document.getElementById('interface-global-font-family')?.addEventListener('change', () => {
       this.setInterfaceGlobalFontFamily((document.getElementById('interface-global-font-family') as HTMLSelectElement).value);
     });
@@ -684,6 +692,7 @@ class ElementManager {
 
     this.setInterfaceTheme((document.getElementById('interface-theme') as HTMLSelectElement).value);
     this.setInterfaceGlobalFontFamily((document.getElementById('interface-global-font-family') as HTMLSelectElement).value);
+    this.setInterfaceShowMessages((document.getElementById('interface-show-messages') as HTMLSelectElement).value);
     this.setInterfaceShowPanelIcons((document.getElementById('interface-show-panel-icons') as HTMLSelectElement).value);
     this.setInterfacePanelFontFamily((document.getElementById('interface-panel-font-family') as HTMLSelectElement).value);
     this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
@@ -768,6 +777,22 @@ class ElementManager {
       }
     } catch (error) {
       log(`Ошибка изменения шрифта: ${error}`, 'error');
+    }
+  }
+
+  private setInterfaceShowMessages(state: string): void {
+    try {
+      changeMessagesVisibility(state);
+
+      document.querySelectorAll<HTMLElement>('.message').forEach(m => {
+        if (state === 'hide') {
+          m.style.display = 'none';
+        } else {
+          m.style.display = 'flex';
+        }
+      });
+    } catch (error) {
+      log(`Ошибка изменения состояния сообщений: ${error}`, 'error');
     }
   }
 
@@ -1014,6 +1039,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         log(message, name);
       } catch (error) {
         log(`Ошибка принятие log-события: ${error}`, 'error');
+      }
+    });
+
+    await listen('message', (event) => {
+      try {
+        const payload = event.payload as { name: string; content: string; };
+        const name = payload.name;
+        const content = payload.content;
+
+        spawnMessage(name, content);
+      } catch (error) {
+        log(`Ошибка принятие message-события: ${error}`, 'error');
       }
     });
 

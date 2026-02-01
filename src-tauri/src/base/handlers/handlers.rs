@@ -1,3 +1,5 @@
+use azalea::Vec3;
+use azalea::entity::Position;
 use azalea::entity::metadata::Health;
 use azalea::local_player::Hunger;
 use azalea::protocol::common::client_information::ParticleStatus;
@@ -137,14 +139,30 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
       STATES.set(&nickname, "status", "Онлайн".to_string());
 
       if let Some(options) = get_current_options() {
+        let pos = if let Some(p) = bot.get_component::<Position>() {
+          Vec3::new(p.x, p.y, p.z)
+        } else {
+          Vec3::new(0.0, 0.0, 0.0)
+        };
+
+        let health = if let Some(h) = bot.get_component::<Health>() {
+          h.0.to_string()
+        } else {
+          "?".to_string()
+        };
+
+        let str_pos = format!("{}, {}, {}", pos.x, pos.y, pos.z);
+
         if options.use_webhook {
-          send_webhook(options.webhook_settings.url, format!("Бот {} заспавнился", &nickname));
+          send_webhook(options.webhook_settings.url, format!("Бот {} заспавнился | Координаты (XYZ): {} | Здоровье: {} / 20", &nickname, str_pos, health));
         }
 
         emit_event(EventType::Log(LogEventPayload { 
           name: "info".to_string(), 
-          message: format!("Бот {} заспавнился", &nickname)
+          message: format!("Бот {} заспавнился, координаты (XYZ): {}", &nickname, str_pos)
         }));
+
+        emit_message("Система", format!("Бот {} заспавнился<br><br>Координаты (XYZ): {}<br>Здоровье: {} / 20", &nickname, str_pos, health));
 
         let min_delay;
         let max_delay;
@@ -275,6 +293,8 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
           name: "info".to_string(),
           message: format!("Бот {} отключился: {}", &nickname, text.to_html())
         }));
+
+        emit_message("Система", format!("Бот {} отключился: {}", &nickname, text.to_string()));
       }
     },
     Event::Chat(packet) => {

@@ -7,11 +7,7 @@ export function date(format: string = 'H:M:S'): string {
 
   if (format === 'H:M:S') {
     return `${hours}:${minutes}:${seconds}`;
-  } else if (format === 'H:M') {
-    return `${hours}:${minutes}`;
-  } else if (format === 'M:S') {
-    return `${minutes}:${seconds}`;
   } else {
-    return `${hours}:${minutes}:${seconds}`;
+    return `${hours}:${minutes}`;
   }
 }

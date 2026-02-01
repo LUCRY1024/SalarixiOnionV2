@@ -193,6 +193,8 @@
   </div>
 
   <div class="main-container">
+    <div class="messages-wrap" id="messages-wrap"></div>
+
     <div class="form-container" id="main-container" global="true">
       <h1 class="title" translator-tag="title:main">Главная</h1>
 
@@ -511,7 +513,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-armor" state="true" id="auto-armor-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-armor" state="true" id="auto-armor-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-armor-plugin-description">Описание</button>
             </div>
           </div>
@@ -529,7 +531,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-totem" state="true" id="auto-totem-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-totem" state="true" id="auto-totem-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-totem-plugin-description">Описание</button>
             </div>
           </div>
@@ -547,7 +549,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-eat" state="true" id="auto-eat-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-eat" state="true" id="auto-eat-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-eat-plugin-description">Описание</button>
             </div>
           </div>
@@ -565,7 +567,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-potion" state="true" id="auto-potion-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-potion" state="true" id="auto-potion-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-potion-plugin-description">Описание</button>
             </div>
           </div>
@@ -583,7 +585,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-look" state="true" id="auto-look-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-look" state="true" id="auto-look-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-look-plugin-description">Описание</button>
             </div>
           </div>
@@ -601,7 +603,7 @@
             </div>
 
             <div class="controls">
-              <button class="button" plugin-toggler="true" plugin-name="auto-shield" state="true" id="auto-shield-toggler" style="color: #d61818;" keep="true">Выключен</button>
+              <button class="button" plugin-toggler="true" plugin-name="auto-shield" state="true" id="auto-shield-toggler" style="color: #d61818;">Выключен</button>
               <button class="button" plugin-open-description="true" path="auto-shield-plugin-description">Описание</button>
             </div>
           </div>
@@ -1668,7 +1670,7 @@
         </div>
 
         <div class="control-container" id="control-farmer-container" style="display: none;" sector="true">
-          <h1 class="header" translator-tag="header:farmer">Управление / Фермер</h1>
+          <h1 class="header" translator-tag="header:control-farmer">Управление / Фермер</h1>
 
           <div class="columns">
             <div class="wrap left">
@@ -1873,6 +1875,14 @@
                   <option value="inter">Inter</option>
                   <option value="gill-sans">Gill Sans</option>
                   <option value="segoe-ui">Segoe UI</option>
+                </select>
+              </div>
+
+              <div class="custom-select between">
+                <label translator-tag="label:interface-show-messages">Сообщения: </label>
+                <select id="interface-show-messages" style="width: 120px;" name="interfaceShowMessages" keep="true">
+                  <option value="show" translator-tag="label:interface-show-messages">Показать</option>
+                  <option value="hide" translator-tag="label:interface-hide-messages">Скрыть</option>
                 </select>
               </div>
             </div>

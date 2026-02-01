@@ -40,26 +40,47 @@ pub struct AntiMapCaptchaEventPayload {
   pub nickname: String
 }
 
+// Структура данных в message-payload
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MessagePayload {
+  pub name: String,
+  pub content: String
+}
+
 // Функция отправки события
 pub fn emit_event(event: EventType) {
   if let Some(arc) = get_flow_manager() {
     let fm = arc.read();
 
-    if fm.app_handle.is_some() {
+    if let Some(handle) = fm.app_handle.as_ref() {
       match event {
         EventType::Log(payload) => {
-          let _ = fm.app_handle.as_ref().unwrap().emit("log", payload);
+          let _ = handle.emit("log", payload);
         },
         EventType::Chat(payload) => {
-          let _ = fm.app_handle.as_ref().unwrap().emit("chat", payload);
+          let _ = handle.emit("chat", payload);
         },
         EventType::AntiWebCaptcha(payload) => {
-          let _ = fm.app_handle.as_ref().unwrap().emit("anti-web-captcha", payload);
+          let _ = handle.emit("anti-web-captcha", payload);
         },
         EventType::AntiMapCaptcha(payload) => {
-          let _ = fm.app_handle.as_ref().unwrap().emit("anti-map-captcha", payload);
+          let _ = handle.emit("anti-map-captcha", payload);
         }
       }
+    }
+  } 
+}
+
+// Функция отправки сообщения
+pub fn emit_message(name: &str, content: String) {
+  if let Some(arc) = get_flow_manager() {
+    let fm = arc.read();
+
+    if let Some(handle) = fm.app_handle.as_ref() {
+      let _ = handle.emit("message", MessagePayload {
+        name: name.to_string(),
+        content: content
+      });
     }
   } 
 }

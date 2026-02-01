@@ -925,6 +925,13 @@
       }
     },
     {
+      "tags": ["label:interface-show-messages"],
+      "lang": {
+        "ru": "Сообщения:",
+        "en": "Messages:"
+      }
+    },
+    {
       "tags": ["label:interface-section-panel"],
       "lang": {
         "ru": "Панель",
@@ -939,14 +946,14 @@
       }
     },
     {
-      "tags": ["label:interface-show-icons"],
+      "tags": ["label:interface-show-icons", "label:interface-show-messages"],
       "lang": {
         "ru": "Показать",
         "en": "Show"
       }
     },
     {
-      "tags": ["label:interface-hide-icons"],
+      "tags": ["label:interface-hide-icons", "label:interface-hide-messages"],
       "lang": {
         "ru": "Скрыть",
         "en": "Hide"
