@@ -48,32 +48,36 @@ const pressedKeys: { [x: string]: boolean } = {
   z: false
 };
 
-export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield'];
+export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield', 'auto-repair'];
 
 export const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
     enable: false,
-    date: '23.01.2026'
+    date: '01.02.2026'
   },
   'auto-totem': {
     enable: false,
-    date: '23.01.2026'
+    date: '01.02.2026'
   },
   'auto-eat': {
     enable: false,
-    date: '27.01.2026'
+    date: '01.02.2026'
   },
   'auto-potion': {
     enable: false,
-    date: '27.01.2026'
+    date: '01.02.2026'
   },
   'auto-look': {
     enable: false,
-    date: '27.01.2026'
+    date: '01.02.2026'
   },
   'auto-shield': {
     enable: false,
-    date: '29.01.2026'
+    date: '01.02.2026'
+  },
+  'auto-repair': {
+    enable: false,
+    date: '01.02.2026'
   }
 };
 
@@ -227,7 +231,8 @@ async function startBots(): Promise<void> {
       auto_eat: plugins['auto-eat'].enable,
       auto_potion: plugins['auto-potion'].enable,
       auto_look: plugins['auto-look'].enable,
-      auto_shield: plugins['auto-shield'].enable
+      auto_shield: plugins['auto-shield'].enable,
+      auto_repair: plugins['auto-repair'].enable
     }
   }}) as Array<string>;
 

@@ -8,9 +8,11 @@ use azalea::core::position::BlockPos;
 use azalea::entity::Physics;
 use azalea::block::BlockState;
 use azalea::protocol::packets::game::ServerboundSwing;
+use azalea::protocol::packets::game::ServerboundUseItem;
 use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::protocol::packets::game::ServerboundPlayerAction;
 use azalea::protocol::packets::game::s_player_action::Action;
+use azalea::registry::builtin::ItemKind;
 use bevy_ecs::entity::Entity;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -119,7 +121,7 @@ pub fn set_bot_on_ground(bot: &Client, on_ground: bool) {
   }
 }
 
-// Функция конвертировки индекса inventory-слота в индекс hotbar-слота
+// Функция конвертации индекса inventory-слота в индекс hotbar-слота
 pub fn convert_inventory_slot_to_hotbar_slot(slot: usize) -> Option<u8> {
   match slot {
     36 => Some(0),
@@ -167,50 +169,100 @@ pub fn get_entity_position(bot: &Client, entity: Entity) -> Vec3 {
   Vec3::new(0.0, 0.0, 0.0)
 }
 
-// Функция перемещения предмета в hotbar
-pub async fn move_item_to_hotbar(bot: &Client, source_slot: usize) {
+// Функция, позволяющая боту безопасно переместить предмет в hotbar и взять его
+pub async fn take_item(bot: &Client, source_slot: usize) {
   let nickname = bot.username();
 
   STATES.set(&nickname, "can_walk", "false".to_string());
   
-  let inventory = bot.get_inventory();
+  bot.walk(WalkDirection::None);
 
-  if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(source_slot) {
-    if bot.selected_hotbar_slot() != hotbar_slot {
-      bot.set_selected_hotbar_slot(hotbar_slot);
-    }
-  } else {
-    if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
-      bot.walk(WalkDirection::None);
-
-      inventory.left_click(source_slot);
-      sleep(Duration::from_millis(50)).await;
-      inventory.left_click(empty_slot);
-
-      if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
-        if bot.selected_hotbar_slot() != slot {
-          bot.set_selected_hotbar_slot(slot);
-          sleep(Duration::from_millis(50)).await;
-        }
-      }
-    } else {
-      let random_slot = randuint(36, 44) as usize;
-      
-      bot.walk(WalkDirection::None);
-
-      inventory.shift_click(random_slot);
-      sleep(Duration::from_millis(50)).await;
-      inventory.left_click(source_slot);
-      sleep(Duration::from_millis(50)).await;
-      inventory.left_click(random_slot);
-
-      let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
-
+  if let Some(inventory) = bot.open_inventory() {
+    if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(source_slot) {
       if bot.selected_hotbar_slot() != hotbar_slot {
         bot.set_selected_hotbar_slot(hotbar_slot);
       }
+    } else {
+      if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
+        inventory.left_click(source_slot);
+        sleep(Duration::from_millis(50)).await;
+        inventory.left_click(empty_slot);
+
+        if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
+          if bot.selected_hotbar_slot() != slot {
+            bot.set_selected_hotbar_slot(slot);
+            sleep(Duration::from_millis(50)).await;
+          }
+        }
+      } else {
+        let random_slot = randuint(36, 44) as usize;
+
+        inventory.shift_click(random_slot);
+        sleep(Duration::from_millis(50)).await;
+        inventory.left_click(source_slot);
+        sleep(Duration::from_millis(50)).await;
+        inventory.left_click(random_slot);
+
+        let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
+
+        if bot.selected_hotbar_slot() != hotbar_slot {
+          bot.set_selected_hotbar_slot(hotbar_slot);
+        }
+      }
     }
   }
+
+  STATES.set(&nickname, "can_walk", "true".to_string());
+}
+
+// Функция безопасного перемещения предмета
+pub async fn move_item(bot: &Client, kind: ItemKind, source_slot: usize, target_slot: usize) {
+  if let Some(inventory) = bot.open_inventory() {
+    let nickname = bot.username();
+
+    STATES.set(&nickname, "can_walk", "false".to_string());
+
+    bot.walk(WalkDirection::None);
+
+    if let Some(item) = bot.menu().slot(target_slot) {
+      if item.kind() == kind {
+        return;
+      }
+
+      if !item.is_empty() {
+        inventory.shift_click(target_slot);
+        sleep(Duration::from_millis(50)).await;
+      }
+    }
+
+    inventory.left_click(source_slot);
+    sleep(Duration::from_millis(50)).await;
+    inventory.left_click(target_slot);
+
+    STATES.set(&nickname, "can_walk", "true".to_string());
+  }
+}
+
+// Функция безопасного перемещения предмета в offhand
+pub fn move_item_to_offhand(bot: &Client, kind: ItemKind) {
+  let nickname = bot.username();
+
+  STATES.set(&nickname, "can_walk", "false".to_string());
+  
+  bot.walk(WalkDirection::None);
+
+  if let Some(item) = bot.menu().slot(45) {
+    if item.kind() == kind {
+      return;
+    }
+  }
+
+  bot.write_packet(ServerboundPlayerAction {
+    action: Action::SwapItemWithOffhand,
+    pos: BlockPos::new(0, 0, 0),
+    direction: Direction::Down,
+    seq: 0
+  });
 
   STATES.set(&nickname, "can_walk", "true".to_string());
 }
@@ -233,6 +285,18 @@ pub fn run(bot: &Client, direction: SprintDirection) {
 pub fn swing_arm(bot: &Client) {
   bot.write_packet(ServerboundSwing {
     hand: InteractionHand::MainHand
+  });
+}
+
+// Функция отправки пакета StartUseItem
+pub fn start_use_item(bot: &Client, hand: InteractionHand) {
+  let direction = bot.direction();
+
+  bot.write_packet(ServerboundUseItem {  
+    hand: hand,
+    y_rot: direction.0,
+    x_rot: direction.1,
+    seq: 0
   });
 }
 

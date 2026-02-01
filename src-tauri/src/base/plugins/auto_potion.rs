@@ -13,7 +13,7 @@ use crate::base::get_flow_manager;
 use crate::state::STATES;
 use crate::tasks::TASKS;
 use crate::tools::{randchance, randfloat, randuint};
-use crate::common::{get_bot_physics, move_item_to_hotbar, release_use_item};
+use crate::common::{get_bot_physics, take_item, release_use_item};
 
 
 #[derive(Clone)]
@@ -67,7 +67,7 @@ impl AutoPotionPlugin {
               if should_drink {
                 STATES.set_plugin_activity(&nickname, "auto-potion", true);
 
-                move_item_to_hotbar(bot, slot).await;
+                take_item(bot, slot).await;
                 sleep(Duration::from_millis(randuint(50, 100))).await;
                 Self::use_potion(bot, potion.kind).await;
 

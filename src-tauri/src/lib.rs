@@ -39,13 +39,7 @@ async fn launch_bots(options: LaunchOptions) -> (String, String) {
 #[tauri::command(async)]
 async fn stop_bots() -> (String, String) {
   if let Some(arc) = get_flow_manager() {
-    let active_bots_count = if let Some(arc) = get_flow_manager() {
-      arc.read().bots_count
-    } else {
-      0
-    };
-
-    emit_message("Система", format!("Остановка {} ботов...", active_bots_count));
+    emit_message("Система", format!("Остановка {} ботов...", get_active_bots_count()));
 
     return arc.write().stop();
   } else {
@@ -118,7 +112,18 @@ fn save_radar_data(target: String, path: String, filename: String, x: f64, y: f6
 fn get_active_bots_count() -> i32 {
   if let Some(arc) = get_flow_manager() {
     let fm = arc.read();
-    return fm.bots_count;
+    
+    let mut count = 0;
+
+    for (nickname, _) in &fm.bots {
+      if let Some(state) = STATES.get(&nickname) {
+        if state.read().unwrap().status.to_lowercase().as_str() == "онлайн" {
+          count += 1;
+        }
+      }
+    }
+
+    return count;
   }
 
   0
@@ -167,13 +172,7 @@ async fn quick_task(name: String) {
     message: format!("Быстрая задача '{}'", name)
   }));
 
-  let active_bots_count = if let Some(arc) = get_flow_manager() {
-    arc.read().bots_count
-  } else {
-    0
-  };
-
-  emit_message("Быстрая задача", format!("{} ботов получили быструю задачу '{}'", active_bots_count, name));
+  emit_message("Быстрая задача", format!("{} ботов получили быструю задачу '{}'", get_active_bots_count(), name));
 
   QuickTaskManager::execute(name).await;
 }

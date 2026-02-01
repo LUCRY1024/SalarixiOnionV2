@@ -1,4 +1,6 @@
 use azalea::entity::Position;
+use azalea::local_player::TabList;
+use azalea::player::GameProfileComponent;
 use serde::{Serialize, Deserialize};
 use chrono::prelude::*;
 use std::fs::OpenOptions;
@@ -33,31 +35,30 @@ impl RadarManager {
     if let Some(arc) = get_flow_manager() {
       let fm = arc.read();
 
-      if fm.active && fm.bots_count > 0 {
-        for bot in fm.bots.clone().into_values() {
-          let tab = bot.tab_list().clone();
+      if fm.active && fm.bots.len() > 0 {
+        for (_, bot) in &fm.bots {
+          if let Some(tab_list) = bot.get_component::<TabList>() {
+            for uuid in tab_list.keys() {
+              if let Some(entity) = bot.entity_by_uuid(*uuid) {
+                if let Some(profile) = bot.get_entity_component::<GameProfileComponent>(entity) {
+                  if profile.0.name == target {
+                    if let Some(player_pos) = bot.get_entity_component::<Position>(entity) {
+                      let client_pos = bot.position();
 
-          for (uuid, entry) in tab {
-            if !fm.active || fm.bots_count == 0 {
-              return None;
-            }
-
-            if entry.profile.name == target {
-              if let Some(entity) = bot.entity_by_uuid(uuid) {
-                let player_pos = bot.entity_component::<Position>(entity);
-                let client_pos = bot.position();
-                
-                return Some(RadarInfo {
-                  status: "Найден".to_string(),
-                  uuid: uuid.to_string(),
-                  x: player_pos.x,
-                  y: player_pos.y,
-                  z: player_pos.z,
-                  observer: RadarObserver {
-                    x: client_pos.x,
-                    z: client_pos.z
+                      return Some(RadarInfo {
+                        status: "Найден".to_string(),
+                        uuid: uuid.to_string(),
+                        x: player_pos.x,
+                        y: player_pos.y,
+                        z: player_pos.z,
+                        observer: RadarObserver {
+                          x: client_pos.x,
+                          z: client_pos.z
+                        }
+                      });
+                    }
                   }
-                });
+                }
               }
             }
           }

@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use crate::TASKS;
-use crate::common::move_item_to_hotbar;
+use crate::common::take_item;
 use crate::tools::*;
 use crate::common::{get_block_state, get_bot_physics, set_bot_velocity_y, set_bot_on_ground};
 
@@ -69,7 +69,7 @@ impl AntiFallModule {
     for (slot, item) in menu.slots().iter().enumerate() {
       if !item.is_empty() {
         if item.kind() == ItemKind::WaterBucket {
-          move_item_to_hotbar(bot, slot).await;
+          take_item(bot, slot).await;
           return true;
         }
       }

@@ -122,20 +122,6 @@ pub fn generate_nickname_or_password(item: &str, t: String, template: String) ->
 }
 
 
-// Функция обновления количества активных ботов
-pub fn update_bots_count(action: char) {
-  if let Some(arc) = get_flow_manager() {
-    let mut fm = arc.write();
-
-    match action {
-      '+' => fm.bots_count += 1,
-      '-' => fm.bots_count -= 1,
-      _ => {}
-    }
-  }
-}
-
-
 // Функция получения текущих опций
 pub fn get_current_options() -> Option<LaunchOptions> {
   if let Some(arc) = get_flow_manager() {
@@ -221,7 +207,8 @@ pub struct Plugins {
   pub auto_eat: bool,
   pub auto_potion: bool,
   pub auto_look: bool,
-  pub auto_shield: bool
+  pub auto_shield: bool,
+  pub auto_repair: bool
 }
 
 // Структура FlowManager
@@ -230,7 +217,6 @@ pub struct FlowManager {
   pub options: Option<LaunchOptions>,
   pub swarm: Option<Swarm>,
   pub bots: HashMap<String, Client>,
-  pub bots_count: i32,
   pub app_handle: Option<tauri::AppHandle>
 }
 
@@ -241,7 +227,6 @@ impl FlowManager {
       options: None,
       swarm: None,
       bots: HashMap::new(),
-      bots_count: 0,
       app_handle: Some(app)
     }
   }
@@ -386,7 +371,6 @@ impl FlowManager {
     }
 
     self.active = false;
-    self.bots_count = 0;
     self.swarm.take();
     self.bots.clear();
 

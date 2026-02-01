@@ -31,7 +31,8 @@ pub struct PluginActivity {
   pub auto_eat: bool,
   pub auto_potion: bool,
   pub auto_look: bool,
-  pub auto_shield: bool
+  pub auto_shield: bool,
+  pub auto_repair: bool
 }
 
 impl BotState {
@@ -56,7 +57,8 @@ impl BotState {
         auto_eat: false, 
         auto_potion: false,
         auto_look: false,
-        auto_shield: false
+        auto_shield: false,
+        auto_repair: false
       }
     }
   }
@@ -161,6 +163,7 @@ impl BotStateManager {
         "auto-potion" => return state.plugin_activity.auto_potion,
         "auto-look" => return state.plugin_activity.auto_look,
         "auto-shield" => return state.plugin_activity.auto_shield,
+        "auto-repair" => return state.plugin_activity.auto_repair,
         _ => {}
       }
     }
@@ -190,6 +193,9 @@ impl BotStateManager {
         },
         "auto-shield" => {
           state.plugin_activity.auto_shield = value;
+        },
+        "auto-repair" => {
+          state.plugin_activity.auto_repair = value;
         },
         _ => {}
       }

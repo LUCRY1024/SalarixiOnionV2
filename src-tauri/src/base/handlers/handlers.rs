@@ -104,8 +104,6 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
     Event::Spawn => {
       let nickname = bot.username();
 
-      update_bots_count('+');
-
       if let Some(arc) = get_flow_manager() {
         if let Some(options) = arc.read().options.clone() {
           if options.plugins.auto_armor {
@@ -130,6 +128,10 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
 
           if options.plugins.auto_shield {
             AutoShieldPlugin::enable(bot.clone());
+          }
+
+          if options.plugins.auto_repair {
+            AutoRepairPlugin::enable(bot.clone());
           }
         }
       }
@@ -265,8 +267,6 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
         let mut fm = arc.write();
         fm.bots.remove(&nickname);
       }  
-
-      update_bots_count('-');
 
       if let Some(tasks) = TASKS.get(&nickname) {
         tasks.write().unwrap().stop_all_tasks();

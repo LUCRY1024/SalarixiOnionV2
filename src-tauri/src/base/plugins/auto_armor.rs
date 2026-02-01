@@ -7,7 +7,6 @@ use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
 use crate::state::STATES;
-use crate::tools::randticks;
 use crate::common::find_empty_slot_in_invenotry;
 
 
@@ -100,7 +99,7 @@ impl AutoArmorPlugin {
           if !item.is_empty() {
             if let Some(empty_slot) = find_empty_slot_in_invenotry(bot) {
               inventory.left_click(armor_slot);
-              bot.wait_ticks(randticks(1, 2)).await;
+              sleep(Duration::from_millis(50)).await;
               inventory.left_click(empty_slot);
             } else {
               return;

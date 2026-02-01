@@ -1,7 +1,5 @@
 use azalea::world::MinecraftEntityId;
-use azalea::{WalkDirection, prelude::*};
-use azalea::prelude::ContainerClientExt;
-use azalea::protocol::packets::game::ServerboundUseItem;
+use azalea::prelude::*;
 use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::registry::builtin::ItemKind;
 use azalea::entity::{Dead, Position, metadata::{Player, AbstractMonster}};
@@ -13,7 +11,7 @@ use crate::base::get_flow_manager;
 use crate::state::STATES;
 use crate::tasks::TASKS;
 use crate::tools::randticks;
-use crate::common::{get_entity_position, release_use_item};
+use crate::common::{get_entity_position, move_item, release_use_item, start_use_item};
 
 
 pub struct AutoShieldPlugin;
@@ -51,15 +49,9 @@ impl AutoShieldPlugin {
                 if item.kind() == ItemKind::Shield {
                   STATES.set_plugin_activity(&nickname, "auto-shield", true);
 
-                  let inventory = bot.get_inventory();
+                  move_item(bot, ItemKind::Shield, slot, 45).await;
 
-                  bot.walk(WalkDirection::None);
-
-                  inventory.left_click(slot);
-                  bot.wait_ticks(1).await;
-                  inventory.left_click(45 as usize);
-
-                  bot.wait_ticks(1).await;
+                  sleep(Duration::from_millis(50)).await;
 
                   Self::start_defending(bot).await;
 
@@ -86,14 +78,7 @@ impl AutoShieldPlugin {
       eye_pos.distance_to(**data.0) <= 8.0 && *data.1 != bot_id
     });
 
-    let direction = bot.direction();
-
-    bot.write_packet(ServerboundUseItem {
-      hand: InteractionHand::OffHand,
-      seq: 0,
-      y_rot: direction.0,
-      x_rot: direction.1
-    });
+    start_use_item(bot, InteractionHand::OffHand);
 
     if let Some(entity) = nearest_entity {
       bot.look_at(get_entity_position(bot, entity));

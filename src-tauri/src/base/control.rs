@@ -16,7 +16,7 @@ impl ModuleManager {
 
       let bots = fm.bots.clone();
 
-      if fm.bots_count > 0 {
+      if fm.bots.len() > 0 {
         match name.as_str() {
           "chat" => {
             let o: ChatOptions = serde_json::from_value(options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();

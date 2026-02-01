@@ -12,7 +12,7 @@ use tokio::time::sleep;
 use crate::TASKS;
 use crate::state::STATES;
 use crate::tools::*;
-use crate::common::{get_entity_position, move_item_to_hotbar, run};
+use crate::common::{get_entity_position, take_item, run};
 
 
 #[derive(Debug)]
@@ -142,7 +142,7 @@ impl KillauraModule {
     }
 
     if let Some(slot) = best_weapon.slot {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
     }
   }
 
@@ -274,7 +274,7 @@ impl KillauraModule {
     let nickname = bot.username();
 
     loop {
-      if !STATES.get_plugin_activity(&bot.username(), "auto-eat") && !STATES.get_plugin_activity(&bot.username(), "auto-potion") {
+      if !STATES.get_plugin_activity(&bot.username(), "auto-eat") && !STATES.get_plugin_activity(&bot.username(), "auto-potion") && !STATES.get_plugin_activity(&nickname, "auto-repair") {
         if let Some(_) = Self::find_nearest_entity(bot, config.target.clone(), config.distance) {
           STATES.set(&nickname, "attacks", "true".to_string());
           

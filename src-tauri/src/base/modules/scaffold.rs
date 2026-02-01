@@ -6,7 +6,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::TASKS;
-use crate::common::{convert_inventory_slot_to_hotbar_slot, get_block_state, get_bot_physics, move_item_to_hotbar, swing_arm};
+use crate::common::{convert_inventory_slot_to_hotbar_slot, get_block_state, get_bot_physics, take_item, swing_arm};
 use crate::tools::*;
 
 
@@ -151,7 +151,7 @@ impl ScaffoldModule {
     }
 
     if let Some(slot) = block_slot {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
       return true;
     }
 

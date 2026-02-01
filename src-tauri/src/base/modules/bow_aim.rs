@@ -14,7 +14,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::TASKS;
-use crate::common::{get_entity_position, move_item_to_hotbar, release_use_item};
+use crate::common::{get_entity_position, take_item, release_use_item};
 use crate::state::STATES;
 use crate::tools::*;
 
@@ -48,7 +48,7 @@ impl BowAimModule {
 
   async fn shoot(bot: &Client, entity: Entity) {
     if let Some(slot) = Self::find_bow_in_inventory(bot) {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
 
       bot.start_use_item();
 
@@ -95,7 +95,7 @@ impl BowAimModule {
     let nickname = bot.username();
 
     loop {
-      if !STATES.get_plugin_activity(&nickname, "auto-eat") && !STATES.get_plugin_activity(&nickname, "auto-potion") && !STATES.attacks(&nickname) {
+      if !STATES.get_plugin_activity(&nickname, "auto-eat") && !STATES.get_plugin_activity(&nickname, "auto-potion") && !STATES.attacks(&nickname) && !STATES.get_plugin_activity(&nickname, "auto-repair") {
         let mut nearest_entity = None;
 
         match options.target.as_str() {

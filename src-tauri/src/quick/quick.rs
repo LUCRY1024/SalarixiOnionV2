@@ -26,7 +26,7 @@ impl QuickTaskManager {
     if let Some(arc) = get_flow_manager() {
       let fm = arc.write();
       
-      if fm.bots_count > 0 {
+      if fm.bots.len() > 0 {
         match name.as_str() {
           "clear-inventory" => {
             for bot in fm.bots.clone().into_values() {

@@ -1,10 +1,10 @@
-use azalea::{WalkDirection, prelude::*};
-use azalea::prelude::ContainerClientExt;
+use azalea::prelude::*;
 use azalea::registry::builtin::ItemKind;
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
+use crate::common::move_item;
 use crate::state::STATES;
 
 
@@ -31,27 +31,23 @@ impl AutoTotemPlugin {
     let nickname = bot.username();
 
     if let Some(item) = bot.menu().slot(45) {
-      if item.is_empty() || item.kind() == ItemKind::Shield {
-        if !STATES.get_plugin_activity(&nickname, "auto-shield") {
-          for (slot, item) in bot.menu().slots().iter().enumerate() {  
-            if slot != 45 {
-              if item.kind() == ItemKind::TotemOfUndying {
-                STATES.set_plugin_activity(&nickname, "auto-totem", true);
-                
-                let inventory = bot.get_inventory();
+      if !item.is_empty() && item.kind() != ItemKind::Shield {
+        return;
+      }
+    } 
 
-                bot.walk(WalkDirection::None);
+    if !STATES.get_plugin_activity(&nickname, "auto-shield") {
+      for (slot, item) in bot.menu().slots().iter().enumerate() {  
+        if slot != 45 {
+          if item.kind() == ItemKind::TotemOfUndying {
+            STATES.set_plugin_activity(&nickname, "auto-totem", true);
+            
+            move_item(bot, ItemKind::TotemOfUndying, slot, 45).await;
 
-                inventory.left_click(slot);
-                bot.wait_ticks(1).await;
-                inventory.left_click(45 as usize);
-
-                STATES.set_plugin_activity(&nickname, "auto-totem", false);
-              }
-            }
+            STATES.set_plugin_activity(&nickname, "auto-totem", false);
           }
         }
       }
-    } 
+    }
   }
 }

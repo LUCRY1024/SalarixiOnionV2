@@ -2,7 +2,6 @@ use azalea::entity::metadata::Health;
 use azalea::inventory::ItemStack;
 use azalea::local_player::Hunger;
 use azalea::prelude::*;
-use azalea::protocol::packets::game::ServerboundUseItem;
 use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::registry::builtin::ItemKind;
 use std::time::Duration;
@@ -10,8 +9,9 @@ use tokio::time::sleep;
 
 use crate::base::get_flow_manager;
 use crate::common::release_use_item;
+use crate::common::start_use_item;
 use crate::state::STATES;
-use crate::common::move_item_to_hotbar;
+use crate::common::take_item;
 use crate::tasks::TASKS;
 use crate::tools::randchance;
 use crate::tools::randuint;
@@ -66,7 +66,7 @@ impl AutoEatPlugin {
             if should_eat {
               STATES.set_plugin_activity(&nickname, "auto-eat", true);
 
-              move_item_to_hotbar(bot, food_slot).await;
+              take_item(bot, food_slot).await;
               sleep(Duration::from_millis(randuint(50, 100))).await;
               Self::start_eating(bot).await;
 
@@ -79,14 +79,7 @@ impl AutoEatPlugin {
   }
 
   async fn start_eating(bot: &Client) {
-    let direction = bot.direction();
-
-    bot.write_packet(ServerboundUseItem {
-      hand: InteractionHand::MainHand,
-      seq: 0,
-      y_rot: direction.0,
-      x_rot: direction.1
-    });
+    start_use_item(bot, InteractionHand::MainHand);
 
     sleep(Duration::from_millis(3100)).await;
 

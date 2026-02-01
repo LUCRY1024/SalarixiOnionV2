@@ -6,7 +6,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::TASKS;
-use crate::common::{get_block_state, move_item_to_hotbar};
+use crate::common::{get_block_state, take_item};
 use crate::tools::*;
 
 
@@ -55,7 +55,7 @@ impl FarmerModule {
     }
 
     if let Some(slot) = best_tool.slot {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
     }
   }
 
@@ -106,7 +106,7 @@ impl FarmerModule {
     }
 
     if let Some(slot) = ferilizer_slot {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
       
       for _ in 0..=4 {
         sleep(Duration::from_millis(if mode.as_str() == "normal" { randuint(50, 100) } else { 50 })).await;
@@ -131,7 +131,7 @@ impl FarmerModule {
     }
 
     if let Some(slot) = plant_slot {
-      move_item_to_hotbar(bot, slot).await;
+      take_item(bot, slot).await;
       return true;
     }
     
