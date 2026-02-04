@@ -31,7 +31,11 @@ pub struct BowAimOptions {
 }
 
 impl BowAimModule {
-  fn find_bow_in_inventory(bot: &Client) -> Option<usize> {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn find_bow_in_inventory(&self, bot: &Client) -> Option<usize> {
     let menu = bot.menu();
 
     for (slot, item) in menu.slots().iter().enumerate() {
@@ -45,8 +49,8 @@ impl BowAimModule {
     None
   }
 
-  async fn shoot(bot: &Client, entity: Entity) {
-    if let Some(slot) = Self::find_bow_in_inventory(bot) {
+  async fn shoot(&self, bot: &Client, entity: Entity) {
+    if let Some(slot) = self.find_bow_in_inventory(bot) {
       take_item(bot, slot).await;
 
       bot.start_use_item();
@@ -83,7 +87,7 @@ impl BowAimModule {
     }
   }
 
-  async fn aiming(bot: &Client, options: BowAimOptions) {
+  async fn aiming(&self, bot: &Client, options: BowAimOptions) {
     let bot_id = if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
       bot_id
     } else {
@@ -128,7 +132,7 @@ impl BowAimModule {
           
           bot.look_at(Vec3::new(pos.x + randfloat(-0.3405, 0.3405), pos.y + randfloat(-0.3405, 0.3405), pos.z + randfloat(-0.3405, 0.3405)));
           
-          Self::shoot(bot, entity).await;
+          self.shoot(bot, entity).await;
         }
       }
 
@@ -136,11 +140,11 @@ impl BowAimModule {
     }
   }
 
-  pub async fn enable(bot: &Client, options: BowAimOptions) {
-    Self::aiming(bot, options).await;
+  pub async fn enable(&self, bot: &Client, options: BowAimOptions) {
+    self.aiming(bot, options).await;
   }
 
-  pub fn stop(bot: &Client) {
+  pub fn stop(&self, bot: &Client) {
     TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("bow-aim");
     release_use_item(bot);
   }

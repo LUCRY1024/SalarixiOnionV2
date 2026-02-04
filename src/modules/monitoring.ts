@@ -233,7 +233,8 @@ export class MonitoringManager {
 
                 <button class="btn spec" id="open-chat-${nickname}">Открыть чат</button>
                 <button class="btn spec" id="solve-captcha-${nickname}" style="display: none;">Решить капчу</button>
-                <button class="btn red spec" id="disconnect-${nickname}" style="margin-bottom: 12px;">Отключить</button>
+                <button class="btn spec" id="reset-${nickname}">Сбросить</button>
+                <button class="btn spec" id="disconnect-${nickname}" style="margin-bottom: 12px;">Отключить</button>
 
                 <div class="chat-container cover" id="chat-${nickname}">
                   <div class="panel">
@@ -358,6 +359,18 @@ export class MonitoringManager {
         log(result[1], result[0]);
       } catch (error) {
         log(`Ошибка отключения бота ${nickname}: ${error}`, 'error');
+      }
+    });
+
+    this.addListener(`reset-${nickname}`, 'click', async () => {
+      try {
+        const result = await invoke('reset_bot', {
+          nickname: nickname
+        }) as Array<string>;
+
+        log(result[1], result[0]);
+      } catch (error) {
+        log(`Ошибка сбрасывания задач и состояний бота ${nickname}: ${error}`, 'error');
       }
     });
 

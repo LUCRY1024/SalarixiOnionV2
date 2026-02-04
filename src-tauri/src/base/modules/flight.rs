@@ -39,7 +39,11 @@ struct FlightConfig {
 }
 
 impl FlightModule {
-  fn create_adaptive_config(anti_cheat: String) -> FlightConfig {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn create_adaptive_config(&self, anti_cheat: String) -> FlightConfig {
     let config;
 
     match anti_cheat.as_str() {
@@ -88,7 +92,7 @@ impl FlightModule {
     config
   }
 
-  async fn hover(bot: &Client, time: Instant) {
+  async fn hover(&self, bot: &Client, time: Instant) {
     loop {
       if Instant::now() >= time {
         break;
@@ -100,9 +104,9 @@ impl FlightModule {
     }
   }
 
-  pub async fn vanilla_flight(bot: &Client, options: FlightOptions) {
+  pub async fn vanilla_flight(&self, bot: &Client, options: FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat)
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
@@ -136,7 +140,7 @@ impl FlightModule {
 
       bot.wait_ticks(randticks(config.min_delay, config.max_delay)).await;
 
-      Self::hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
+      self.hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
 
       if config.use_ground_spoof {
         set_bot_on_ground(bot, false);
@@ -144,9 +148,9 @@ impl FlightModule {
     }
   }
 
-  pub async fn jump_flight(bot: &Client, options: FlightOptions) {
+  pub async fn jump_flight(&self, bot: &Client, options: FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat)
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
@@ -196,7 +200,7 @@ impl FlightModule {
 
       bot.wait_ticks(randticks(config.min_delay, config.max_delay)).await;
 
-      Self::hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
+      self.hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
 
       if config.use_ground_spoof {
         set_bot_on_ground(bot, false);
@@ -204,9 +208,9 @@ impl FlightModule {
     }
   }
 
-  pub async fn teleport_flight(bot: &Client, options: FlightOptions) {
+  pub async fn teleport_flight(&self, bot: &Client, options: FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat)
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(3),
@@ -247,7 +251,7 @@ impl FlightModule {
 
       bot.wait_ticks(randticks(config.min_delay, config.max_delay)).await;
 
-      Self::hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
+      self.hover(bot, Instant::now() + Duration::from_millis(randuint(100, 150))).await;
 
       if config.use_ground_spoof {
         set_bot_on_ground(bot, false);
@@ -255,9 +259,9 @@ impl FlightModule {
     }
   }
 
-  pub async fn bug_flight(bot: &Client, options: FlightOptions) {
+  pub async fn bug_flight(&self, bot: &Client, options: FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat)
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
@@ -305,7 +309,7 @@ impl FlightModule {
 
       bot.wait_ticks(randticks(config.min_delay, config.max_delay)).await;
 
-      Self::hover(bot, Instant::now() + Duration::from_millis(randuint(600, 800))).await;
+      self.hover(bot, Instant::now() + Duration::from_millis(randuint(600, 800))).await;
 
       if config.use_ground_spoof {
         set_bot_on_ground(bot, false);
@@ -313,17 +317,17 @@ impl FlightModule {
     }
   }
 
-  pub async fn enable(bot: &Client, options: FlightOptions) {
+  pub async fn enable(&self, bot: &Client, options: FlightOptions) {
     match options.mode.as_str() {
-      "vanilla" => { Self::vanilla_flight(bot, options).await; },
-      "jump-fly" => { Self::jump_flight(bot, options).await; },
-      "teleport-fly" => { Self::teleport_flight(bot, options).await; },
-      "bug-fly" => { Self::bug_flight(bot, options).await; },
+      "vanilla" => { self.vanilla_flight(bot, options).await; },
+      "jump-fly" => { self.jump_flight(bot, options).await; },
+      "teleport-fly" => { self.teleport_flight(bot, options).await; },
+      "bug-fly" => { self.bug_flight(bot, options).await; },
       _ => {}
     } 
   } 
 
-  pub fn stop(nickname: &String) {
+  pub fn stop(&self, nickname: &String) {
     TASKS.get(nickname).unwrap().write().unwrap().kill_task("flight");
   }
 }

@@ -1,3 +1,3 @@
 mod quick;
 
-pub use quick::QuickTaskManager;
+pub use quick::QUICK_TASK_MANAGER;

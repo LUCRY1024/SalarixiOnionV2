@@ -20,7 +20,11 @@ struct BrokenItem {
 pub struct AutoRepairPlugin;
 
 impl AutoRepairPlugin {
-  pub fn enable(bot: Client) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn enable(&'static self, bot: Client) {
     tokio::spawn(async move {
       loop {
         if let Some(arc) = get_flow_manager() {
@@ -29,15 +33,15 @@ impl AutoRepairPlugin {
           }
         }
 
-        Self::repair_items(&bot).await;
+        self.repair_items(&bot).await;
 
         sleep(Duration::from_millis(50)).await;
       }
     });
   } 
 
-  async fn repair_items(bot: &Client) {
-    let broken_items = Self::find_broken_items(bot);
+  async fn repair_items(&self, bot: &Client) {
+    let broken_items = self.find_broken_items(bot);
 
     let nickname = bot.username();
 
@@ -50,12 +54,12 @@ impl AutoRepairPlugin {
           sleep(Duration::from_millis(randuint(50, 150))).await;
         } 
 
-        Self::repair_item(bot, broken_item).await;
+        self.repair_item(bot, broken_item).await;
       }
     }
   }
 
-  async fn take_experience_bottles(bot: &Client) -> Option<i32> {
+  async fn take_experience_bottles(&self, bot: &Client) -> Option<i32> {
     for (slot, item) in bot.menu().slots().iter().enumerate() {  
       if item.kind() == ItemKind::ExperienceBottle {
         take_item(bot, slot).await;
@@ -66,8 +70,8 @@ impl AutoRepairPlugin {
     None
   }
 
-  async fn repair_item(bot: &Client, broken_item: BrokenItem) {
-    if let Some(count) = Self::take_experience_bottles(bot).await {
+  async fn repair_item(&self, bot: &Client, broken_item: BrokenItem) {
+    if let Some(count) = self.take_experience_bottles(bot).await {
       let nickname = bot.username();
 
       for _ in 0..=count {
@@ -79,8 +83,8 @@ impl AutoRepairPlugin {
           } 
 
           if let Some(item) = bot.menu().slot(slot) {
-            let current_damage = Self::get_current_item_damage(item);
-            let max_durability = Self::get_max_item_durability(item);
+            let current_damage = self.get_current_item_damage(item);
+            let max_durability = self.get_max_item_durability(item);
 
             if current_damage != 0 && max_durability - current_damage < max_durability / 2 {
               let direction = bot.direction();
@@ -112,7 +116,7 @@ impl AutoRepairPlugin {
     }
   }
 
-  fn get_current_item_damage(item: &ItemStack) -> i32 {
+  fn get_current_item_damage(&self, item: &ItemStack) -> i32 {
     if let Some(damage) = item.get_component::<Damage>() {
       return damage.amount;
     }
@@ -120,7 +124,7 @@ impl AutoRepairPlugin {
     0
   }
 
-  fn get_max_item_durability(item: &ItemStack) -> i32 {
+  fn get_max_item_durability(&self, item: &ItemStack) -> i32 {
     if let Some(damage) = item.get_component::<MaxDamage>() {
       return damage.amount;
     }
@@ -128,7 +132,7 @@ impl AutoRepairPlugin {
     0
   }
 
-  fn item_has_mending(bot: &Client, item: &ItemStack) -> bool {
+  fn item_has_mending(&self, bot: &Client, item: &ItemStack) -> bool {
     if let Some(enchantments) = item.get_component::<Enchantments>() {
       for (enchantment, _) in &enchantments.levels {
         if let Some(id) = bot.resolve_registry_name(enchantment) {
@@ -142,16 +146,16 @@ impl AutoRepairPlugin {
     false
   }
 
-  fn find_broken_items(bot: &Client) -> Vec<BrokenItem> {
+  fn find_broken_items(&self, bot: &Client) -> Vec<BrokenItem> {
     let mut broken_items = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {  
       if !item.is_empty() {
-        let current_damage = Self::get_current_item_damage(item);
-        let max_durability = Self::get_max_item_durability(item);
+        let current_damage = self.get_current_item_damage(item);
+        let max_durability = self.get_max_item_durability(item);
 
         if current_damage != 0 && max_durability - current_damage < max_durability / 2 {
-          if Self::item_has_mending(bot, item) {
+          if self.item_has_mending(bot, item) {
             broken_items.push(BrokenItem { 
               slot: slot, 
               kind: item.kind()

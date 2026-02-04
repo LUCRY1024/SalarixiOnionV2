@@ -11,7 +11,7 @@ use tokio::time::sleep;
 use crate::base::*;
 use crate::common::{start_use_item, stop_bot_sprinting};
 use crate::tools::*;
-use crate::common::{get_bot_physics, take_item, release_use_item};
+use crate::common::{get_bot_physics, take_item};
 
 
 #[derive(Clone)]
@@ -24,7 +24,11 @@ struct Potion {
 pub struct AutoPotionPlugin;
 
 impl AutoPotionPlugin {
-  pub fn enable(bot: Client) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn enable(&'static self, bot: Client) {
     tokio::spawn(async move {
       loop {
         if let Some(arc) = get_flow_manager() {
@@ -33,14 +37,14 @@ impl AutoPotionPlugin {
           }
         }
 
-        Self::drink(&bot).await;
+        self.drink(&bot).await;
 
         sleep(Duration::from_millis(50)).await;
       }
     });
   } 
 
-  async fn drink(bot: &Client) {
+  async fn drink(&self, bot: &Client) {
     let health = if let Some(health) = bot.get_component::<Health>() {
       health
     } else {
@@ -50,10 +54,10 @@ impl AutoPotionPlugin {
     let nickname = bot.username();
 
     if health.0 < 20.0 {
-      let potions = Self::find_potion_in_inventory(bot);
+      let potions = self.find_potion_in_inventory(bot);
 
       if potions.len() > 0 {
-        if let Some(potion) = Self::get_best_potion(bot, potions) {
+        if let Some(potion) = self.get_best_potion(bot, potions) {
           if let Some(slot) = potion.slot {
             if health.0 < 10.0 && !STATES.get_state(&nickname, "is_eating") {
               STATES.set_state(&nickname, "can_eating", false);
@@ -79,7 +83,7 @@ impl AutoPotionPlugin {
 
                 take_item(bot, slot).await;
                 sleep(Duration::from_millis(50)).await;
-                Self::use_potion(bot, potion.kind).await;
+                self.use_potion(bot, potion.kind).await;
                 sleep(Duration::from_millis(50)).await;
 
                 STATES.set_state(&nickname, "can_eating", true);
@@ -93,12 +97,11 @@ impl AutoPotionPlugin {
     }
   }
 
-  async fn use_potion(bot: &Client, kind: String) {
+  async fn use_potion(&self, bot: &Client, kind: String) {
     match kind.as_str() {
       "default" => {
         start_use_item(bot, InteractionHand::MainHand);
         sleep(Duration::from_millis(2700)).await;
-        release_use_item(bot);
       },
       "splash" => {
         let nickname = bot.username();
@@ -125,7 +128,7 @@ impl AutoPotionPlugin {
     }
   }
 
-  fn get_best_potion(bot: &Client, potions: Vec<Potion>) -> Option<Potion> {
+  fn get_best_potion(&self, bot: &Client, potions: Vec<Potion>) -> Option<Potion> {
     let health = if let Some(health) = bot.get_component::<Health>() {
       health
     } else {
@@ -229,11 +232,11 @@ impl AutoPotionPlugin {
     best_potion
   }
 
-  fn find_potion_in_inventory(bot: &Client) -> Vec<Potion> {
+  fn find_potion_in_inventory(&self, bot: &Client) -> Vec<Potion> {
     let mut potion_list = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if let Some(potion) = Self::is_potion(Some(slot), item) {
+      if let Some(potion) = self.is_potion(Some(slot), item) {
         potion_list.push(potion);
       }
     }
@@ -241,7 +244,7 @@ impl AutoPotionPlugin {
     potion_list
   }
 
-  fn is_potion(slot: Option<usize>, item: &ItemStack) -> Option<Potion> {
+  fn is_potion(&self, slot: Option<usize>, item: &ItemStack) -> Option<Potion> {
     match item.kind() {
       ItemKind::Potion => {
         if let Some(contents) = item.get_component::<PotionContents>() {

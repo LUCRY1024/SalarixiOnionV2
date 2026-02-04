@@ -13,7 +13,11 @@ use crate::tools::*;
 pub struct AutoLookPlugin;
 
 impl AutoLookPlugin {
-  pub fn enable(bot: Client) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn enable(&'static self, bot: Client) {
     tokio::spawn(async move {
       loop {
         if let Some(arc) = get_flow_manager() {
@@ -22,14 +26,14 @@ impl AutoLookPlugin {
           }
         }
 
-        Self::look(&bot).await;
+        self.look(&bot).await;
 
         sleep(Duration::from_millis(50)).await;
       }
     });
   } 
 
-  async fn look(bot: &Client) {
+  async fn look(&self, bot: &Client) {
     let eye_pos = bot.eye_position();
 
     let bot_id = if let Some(bot_id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {

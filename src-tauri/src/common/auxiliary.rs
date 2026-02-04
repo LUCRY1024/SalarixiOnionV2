@@ -174,12 +174,10 @@ pub fn get_entity_position(bot: &Client, entity: Entity) -> Vec3 {
 pub async fn stop_bot_sprinting(bot: &Client) {
   let nickname = bot.username();
 
-  STATES.set_state(&nickname, "can_sprinting", false);
-
   bot.stop_pathfinding();
   bot.walk(WalkDirection::None);
 
-  STATES.set_state(&nickname, "is_sprinting", false);
+  STATES.set_mutual_states(&nickname, "sprinting", false);
 
   sleep(Duration::from_millis(50)).await;
 }
@@ -188,12 +186,10 @@ pub async fn stop_bot_sprinting(bot: &Client) {
 pub async fn stop_bot_walking(bot: &Client) {
   let nickname = bot.username();
 
-  STATES.set_state(&nickname, "can_walking", false);
-
   bot.stop_pathfinding();
   bot.walk(WalkDirection::None);
 
-  STATES.set_state(&nickname, "is_walking", false);
+  STATES.set_mutual_states(&nickname, "walking", false);
 
   sleep(Duration::from_millis(50)).await;
 }
@@ -253,8 +249,8 @@ pub async fn take_item(bot: &Client, source_slot: usize) {
       inventory.close();
     }
 
-    STATES.set_state(&nickname, "can_walking", true);
-    STATES.set_state(&nickname, "can_sprinting", true);
+    STATES.set_mutual_states(&nickname, "walking", false);
+    STATES.set_mutual_states(&nickname, "sprinting", false);
   }
 }
 
@@ -285,8 +281,8 @@ pub async fn move_item(bot: &Client, kind: ItemKind, source_slot: usize, target_
 
     inventory.close();
 
-    STATES.set_state(&nickname, "can_walking", true);
-    STATES.set_state(&nickname, "can_sprinting", true);
+    STATES.set_mutual_states(&nickname, "walking", false);
+    STATES.set_mutual_states(&nickname, "sprinting", false);
   }
 }
 
@@ -311,7 +307,7 @@ pub fn go(bot: &Client, direction: WalkDirection) {
   let nickname = bot.username();
 
   if STATES.get_state(&nickname, "can_walking") {
-    STATES.set_state(&nickname, "is_walking", true);
+    STATES.set_mutual_states(&nickname, "walking", true);
     bot.walk(direction);
   }
 }
@@ -321,7 +317,7 @@ pub fn run(bot: &Client, direction: SprintDirection) {
   let nickname = bot.username();
   
   if STATES.get_state(&nickname, "can_sprinting") {
-    STATES.set_state(&nickname, "is_sprinting", true);
+    STATES.set_mutual_states(&nickname, "sprinting", true);
     bot.sprint(direction);
   }
 }
@@ -362,4 +358,111 @@ pub fn release_use_item(bot: &Client) {
     direction: direction,  
     seq: 0
   });
+}
+
+// Функция распознавания твёрдого блока
+pub fn this_is_solid_block(kind: ItemKind) -> bool {
+  match kind {
+    ItemKind::GrassBlock => { return true; },
+    ItemKind::Podzol => { return true; },
+    ItemKind::Mycelium => { return true; },
+    ItemKind::DirtPath => { return true; },
+    ItemKind::Dirt => { return true; },
+    ItemKind::CoarseDirt => { return true; },
+    ItemKind::RootedDirt => { return true; },
+    ItemKind::Farmland => { return true; },
+    ItemKind::Mud => { return true; },
+    ItemKind::Clay => { return true; },
+    ItemKind::Sandstone => { return true; },
+    ItemKind::RedSandstone => { return true; },
+    ItemKind::Ice => { return true; },
+    ItemKind::PackedIce => { return true; },
+    ItemKind::BlueIce => { return true; },
+    ItemKind::SnowBlock => { return true; },
+    ItemKind::MossBlock => { return true; },
+    ItemKind::PaleMossBlock => { return true; },
+    ItemKind::Stone => { return true; },
+    ItemKind::Deepslate => { return true; },
+    ItemKind::Granite => { return true; },
+    ItemKind::Diorite => { return true; },
+    ItemKind::Andesite => { return true; },
+    ItemKind::Calcite => { return true; },
+    ItemKind::Tuff => { return true; },
+    ItemKind::DripstoneBlock => { return true; },
+    ItemKind::Prismarine => { return true; },
+    ItemKind::Obsidian => { return true; },
+    ItemKind::CryingObsidian => { return true; },
+    ItemKind::Netherrack => { return true; },
+    ItemKind::CrimsonNylium => { return true; },
+    ItemKind::WarpedNylium => { return true; },
+    ItemKind::SoulSoil => { return true; },
+    ItemKind::BoneBlock => { return true; },
+    ItemKind::Blackstone => { return true; },
+    ItemKind::Basalt => { return true; },
+    ItemKind::SmoothBasalt => { return true; },
+    ItemKind::EndStone => { return true; },
+    ItemKind::OakLog => { return true; },
+    ItemKind::SpruceLog => { return true; },
+    ItemKind::BirchLog => { return true; },
+    ItemKind::JungleLog => { return true; },
+    ItemKind::AcaciaLog => { return true; },
+    ItemKind::DarkOakLog => { return true; },
+    ItemKind::MangroveLog => { return true; },
+    ItemKind::CherryLog => { return true; },
+    ItemKind::PaleOakLog => { return true; },
+    ItemKind::MushroomStem => { return true; },
+    ItemKind::CrimsonStem => { return true; },
+    ItemKind::WarpedStem => { return true; },
+    ItemKind::WhiteWool => { return true; },
+    ItemKind::LightGrayWool => { return true; },
+    ItemKind::GrayWool => { return true; },
+    ItemKind::BlackWool => { return true; },
+    ItemKind::BrownWool => { return true; },
+    ItemKind::RedWool => { return true; },
+    ItemKind::OrangeWool => { return true; },
+    ItemKind::YellowWool => { return true; },
+    ItemKind::LimeWool => { return true; },
+    ItemKind::GreenWool => { return true; },
+    ItemKind::CyanWool => { return true; },
+    ItemKind::LightBlueWool => { return true; },
+    ItemKind::BlueWool => { return true; },
+    ItemKind::PurpleWool => { return true; },
+    ItemKind::MagentaWool => { return true; },
+    ItemKind::PinkWool => { return true; },
+    ItemKind::WhiteTerracotta => { return true; },
+    ItemKind::LightGrayTerracotta => { return true; },
+    ItemKind::GrayTerracotta => { return true; },
+    ItemKind::BlackTerracotta => { return true; },
+    ItemKind::BrownTerracotta => { return true; },
+    ItemKind::RedTerracotta => { return true; },
+    ItemKind::OrangeTerracotta => { return true; },
+    ItemKind::YellowTerracotta => { return true; },
+    ItemKind::LimeTerracotta => { return true; },
+    ItemKind::GreenTerracotta => { return true; },
+    ItemKind::CyanTerracotta => { return true; },
+    ItemKind::LightBlueTerracotta => { return true; },
+    ItemKind::BlueTerracotta => { return true; },
+    ItemKind::PurpleTerracotta => { return true; },
+    ItemKind::MagentaTerracotta => { return true; },
+    ItemKind::PinkTerracotta => { return true; },
+    ItemKind::WhiteConcrete => { return true; },
+    ItemKind::LightGrayConcrete => { return true; },
+    ItemKind::GrayConcrete => { return true; },
+    ItemKind::BlackConcrete => { return true; },
+    ItemKind::BrownConcrete => { return true; },
+    ItemKind::RedConcrete => { return true; },
+    ItemKind::OrangeConcrete => { return true; },
+    ItemKind::YellowConcrete => { return true; },
+    ItemKind::LimeConcrete => { return true; },
+    ItemKind::GreenConcrete => { return true; },
+    ItemKind::CyanConcrete => { return true; },
+    ItemKind::LightBlueConcrete => { return true; },
+    ItemKind::BlueConcrete => { return true; },
+    ItemKind::PurpleConcrete => { return true; },
+    ItemKind::MagentaConcrete => { return true; },
+    ItemKind::PinkConcrete => { return true; },
+    _ => {}
+  }
+
+  false
 }

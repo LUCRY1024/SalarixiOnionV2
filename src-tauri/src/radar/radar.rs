@@ -3,11 +3,15 @@ use azalea::local_player::TabList;
 use azalea::player::GameProfileComponent;
 use serde::{Serialize, Deserialize};
 use chrono::prelude::*;
+use once_cell::sync::Lazy;
+use std::sync::Arc;
 use std::fs::OpenOptions;
 use std::io::Write;
 
 use crate::base::get_flow_manager;
 
+
+pub static RADAR_MANAGER: Lazy<Arc<RadarManager>> = Lazy::new(|| { Arc::new(RadarManager::new()) });
 
 // Структура информации радара
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,7 +35,11 @@ pub struct RadarObserver {
 pub struct RadarManager;
 
 impl RadarManager {
-  pub fn find_target(target: String) -> Option<RadarInfo> {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn find_target(&self, target: String) -> Option<RadarInfo> {
     if let Some(arc) = get_flow_manager() {
       let fm = arc.read();
 
@@ -69,7 +77,7 @@ impl RadarManager {
     None
   }
 
-  pub fn save_data(target: String, mut path: String, filename: String, x: f64, y: f64, z: f64) {
+  pub fn save_data(&self, target: String, mut path: String, filename: String, x: f64, y: f64, z: f64) {
     let date = Local::now().format("%H:%M:%S").to_string();
     let content = format!("[ {} ] {} ~ X: {}, Y: {}, Z: {}", date, target, x, y, z);
 

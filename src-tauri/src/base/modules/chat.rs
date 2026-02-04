@@ -7,7 +7,7 @@ use regex::Regex;
 use crate::common::get_player_uuid;
 use crate::tools::*;
 use crate::base::*;
-use crate::radar::RadarManager;
+use crate::radar::RADAR_MANAGER;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +29,11 @@ pub struct ChatOptions {
 }
 
 impl ChatModule {
-  fn create_magic_text(text: &str) -> String {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn create_magic_text(&self, text: &str) -> String {
     let mut result = String::new();
 
     let words = text.split_whitespace();
@@ -92,7 +96,7 @@ impl ChatModule {
     result
   } 
 
-  fn create_bypass_text(text: &str) -> String {
+  fn create_bypass_text(&self, text: &str) -> String {
     let stray = ["numeric", "letter", "multi", "special"];
     let separators = ["|", ":", "/", "~"];
 
@@ -114,7 +118,7 @@ impl ChatModule {
     }
   }
 
-  fn process_extra_tags(text: String) -> String {
+  fn process_extra_tags(&self, text: String) -> String {
     let mut result = text.clone();
 
     let radar_re = Regex::new(r"\#radar\[\w+]").unwrap();
@@ -126,7 +130,7 @@ impl ChatModule {
         if let Some(target) = split_target.get(1) {
           let target_nickname = target.replace("]", "").replace(" ", "");
 
-          if let Some(radar_info) = RadarManager::find_target(target_nickname.clone()) {
+          if let Some(radar_info) = RADAR_MANAGER.find_target(target_nickname.clone()) {
             let msg = format!("{} > X: {}, Y: {}, Z: {}", target_nickname, radar_info.x.round(), radar_info.y.round(), radar_info.z.round());
             
             result = text.replace(teg.as_str(), msg.as_str());
@@ -160,12 +164,12 @@ impl ChatModule {
     result
   } 
 
-  pub async fn message(bot: &Client, options: ChatOptions) -> anyhow::Result<()> {
+  pub async fn message(&self, bot: &Client, options: ChatOptions) -> anyhow::Result<()> {
     let mut text = options.message.clone();
 
     if options.use_text_mutation {
       text = Mutator::mutate_text(text);
-      text = Self::process_extra_tags(text);
+      text = self.process_extra_tags(text);
     }
 
     if !options.use_sync {
@@ -173,7 +177,7 @@ impl ChatModule {
     }
 
     if options.use_magic_text {
-      text = Self::create_magic_text(&text);
+      text = self.create_magic_text(&text);
     }
 
     if options.use_global_chat {
@@ -185,7 +189,7 @@ impl ChatModule {
     Ok(())
   }
 
-  pub async fn spamming(bot: &Client, options: ChatOptions) {
+  pub async fn spamming(&self, bot: &Client, options: ChatOptions) {
     let mut latest_text = String::new();
 
     loop {
@@ -193,7 +197,7 @@ impl ChatModule {
 
       if options.use_text_mutation {
         text = Mutator::mutate_text(text);
-        text = Self::process_extra_tags(text);
+        text = self.process_extra_tags(text);
       }
 
       if options.use_sync {
@@ -205,11 +209,11 @@ impl ChatModule {
       let mut final_text = text.clone();
                   
       if options.use_magic_text {
-        final_text = Self::create_magic_text(&final_text);
+        final_text = self.create_magic_text(&final_text);
       }
                   
       if options.use_bypass {
-        final_text = Self::create_bypass_text(&final_text);
+        final_text = self.create_bypass_text(&final_text);
       }
 
       if options.use_global_chat {
@@ -227,7 +231,7 @@ impl ChatModule {
     }
   }
 
-  pub fn stop(nickname: &String) {
+  pub fn stop(&self, nickname: &String) {
     TASKS.get(nickname).unwrap().write().unwrap().kill_task("spamming");
   }
 }

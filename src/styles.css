@@ -1018,7 +1018,7 @@ p {
   text-align: start;
   white-space: pre-wrap;
   word-break: break-all;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 15px;
   margin-left: 4px;
   text-rendering: optimizeSpeed;
@@ -1435,17 +1435,17 @@ textarea::-webkit-resizer {
 
 .bot-card .btn.spec {
   width: calc(100% - 20px);
-  margin: 8px 10px 0 10px;
-  padding: 10px 0;
+  margin: 6px 10px 0 10px;
+  padding: 5px 0;
   font-size: 15px;
   font-weight: normal;
   font-family: var(--global-font-family);
-  color: #f0f0f0;
-  letter-spacing: 0.3px;
+  color: #d1d1d1;
   text-align: center;
+  letter-spacing: 1px;
   border-radius: 4px;
-  border: 1px solid rgba(53, 52, 52, 0.8);
-  background-color: rgba(25, 25, 25, 0.8);
+  border: 1px solid #2b2b2b;
+  background: linear-gradient(90deg, #181818, #1b1b1b);
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   outline: none;
@@ -1454,15 +1454,11 @@ textarea::-webkit-resizer {
 }
 
 .bot-card .btn.spec:hover {
-  border-color: rgba(80, 77, 77, 0.95);
+  border-color: #3b3b3b;
 }
 
 .bot-card .btn.spec:active {
-  border-color: rgba(59, 57, 57, 0.95);
-}
-
-.bot-card .btn.spec.red {
-  color: rgb(253, 11, 11);
+  border-color: #292929;
 }
 
 .bot-card-head {
@@ -2258,6 +2254,26 @@ textarea::-webkit-resizer {
   animation: show-message 0.2s ease;
 }
 
+.message.hide {
+  animation: hide-message 0.2s ease;
+}
+
+@keyframes show-message {
+  0% { opacity: 0; transform: translateX(20px); }
+  25% { opacity: 0.25; transform: translateX(15px); }
+  50% { opacity: 0.5; transform: translateX(10px); }
+  75% { opacity: 0.75; transform: translateX(5px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hide-message {
+  0% { opacity: 1; }
+  25% { opacity: 0.75; }
+  50% { opacity: 0.5; }
+  75% { opacity: 0.25; }
+  100% { opacity: 0; }
+}
+
 .message .progress-bar {
   position: fixed;
   bottom: 0;
@@ -2267,10 +2283,6 @@ textarea::-webkit-resizer {
   width: 100%;
   height: 1px;
   animation: wane-progress-bar 3.9s ease forwards;
-}
-
-.message.hide {
-  animation: hide-message 0.2s ease;
 }
 
 @keyframes wane-progress-bar {
@@ -2285,18 +2297,6 @@ textarea::-webkit-resizer {
   80% { width: 20%; }
   90% { width: 10%; }
   100% { width: 0; }
-}
-
-@keyframes show-message {
-  0% { opacity: 0; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-@keyframes hide-message {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 0; }
 }
 
 .message .up-part {
@@ -2349,7 +2349,7 @@ textarea::-webkit-resizer {
   justify-content: start;
   align-items: start;
   text-align: left;
-  font-family: var(--d-font-family);
+  font-family: var(--global-font-family);
   font-size: 14px;
   color: #888;
   border-top: 1px solid rgba(255, 255, 255, 0.06);

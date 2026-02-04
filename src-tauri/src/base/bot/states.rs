@@ -109,10 +109,38 @@ impl StateManager {
     states.clear();
   }
 
+  pub fn reset(&self, nickname: &String) {
+    if let Some(arc) = self.map.write().unwrap().get(nickname) {
+      let mut states = arc.write().unwrap();
+      states.can_walking = true;
+      states.can_sprinting = true;
+      states.can_eating = true;
+      states.can_drinking = true;
+      states.can_attacking = true;
+      states.can_looking = true;
+      states.can_interacting = true;
+      states.is_walking = false;
+      states.is_sprinting = false;
+      states.is_eating = false;
+      states.is_drinking = false;
+      states.is_attacking = false;
+      states.is_looking = false;
+      states.is_interacting = false;
+    }
+  }
+
   pub fn set_state(&self, nickname: &String, field: &str, value: bool) {
     if let Some(arc) = self.map.write().unwrap().get(nickname) {
       let mut states = arc.write().unwrap();
       states.set(field, value);
+    }
+  }
+
+  pub fn set_mutual_states(&self, nickname: &String, name: &str, current_value: bool) {
+    if let Some(arc) = self.map.write().unwrap().get(nickname) {
+      let mut states = arc.write().unwrap();
+      states.set(format!("is_{}", name).as_str(), current_value);
+      states.set(format!("can_{}", name).as_str(), !current_value);
     }
   }
 

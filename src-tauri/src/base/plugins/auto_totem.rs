@@ -10,7 +10,11 @@ use crate::common::move_item;
 pub struct AutoTotemPlugin;
 
 impl AutoTotemPlugin {
-  pub fn enable(bot: Client) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn enable(&'static self, bot: Client) {
     tokio::spawn(async move {
       loop {
         if let Some(arc) = get_flow_manager() {
@@ -19,14 +23,14 @@ impl AutoTotemPlugin {
           }
         }
 
-        Self::take_totem(&bot).await;
+        self.take_totem(&bot).await;
 
         sleep(Duration::from_millis(50)).await;
       }
     });
   }
 
-  pub async fn take_totem(bot: &Client) {
+  pub async fn take_totem(&self, bot: &Client) {
     if let Some(item) = bot.menu().slot(45) {
       if !item.is_empty() && item.kind() != ItemKind::Shield {
         return;

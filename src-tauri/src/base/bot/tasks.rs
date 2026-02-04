@@ -90,6 +90,14 @@ impl TaskManager {
     self.map.write().unwrap().remove(nickname);
   }
 
+  pub fn reset(&self, nickname: &String) {
+    for (name, tasks) in self.map.write().unwrap().iter() {
+      if *name == *nickname {
+        tasks.write().unwrap().kill_all_tasks();
+      }
+    }
+  }
+
   pub fn clear(&self) {
     for (_, tasks) in self.map.write().unwrap().iter() {
       tasks.write().unwrap().kill_all_tasks();

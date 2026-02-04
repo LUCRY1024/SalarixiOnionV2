@@ -7,7 +7,7 @@ mod quick;
 mod webhook;
 
 use crate::base::*;
-use crate::quick::QuickTaskManager;
+use crate::quick::*;
 use crate::radar::*;
 use crate::emit::*;
 use crate::webhook::*;
@@ -61,6 +61,18 @@ fn send_message(nickname: String, message: String) -> (String, String) {
   ("error".to_string(), format!("Бот {} не смог отправить сообщение '{}' в чат", nickname, message))
 }
 
+// Функция сброса всех задач и состояний бота
+#[tauri::command]
+fn reset_bot(nickname: String) -> (String, String) {
+  if let Some(arc) = get_flow_manager() {
+    if let Some(msg) = arc.write().reset_bot(&nickname) {
+      return ("info".to_string(), msg);
+    }
+  }
+
+  ("error".to_string(), format!("Не удалось сбросить задачи и состояния бота {}", nickname))
+}
+
 // Функция отключения бота
 #[tauri::command]
 fn disconnect_bot(nickname: String) -> (String, String) {
@@ -95,13 +107,13 @@ fn set_group(nickname: String, group: String) {
 // Функция получения radar-данных
 #[tauri::command]
 fn get_radar_data(target: String) -> Option<RadarInfo> {
-  RadarManager::find_target(target)
+  RADAR_MANAGER.find_target(target)
 }
 
 // Функция сохранения radar-данных
 #[tauri::command]
 fn save_radar_data(target: String, path: String, filename: String, x: f64, y: f64, z: f64) {
-  RadarManager::save_data(target, path, filename, x, y, z);
+  RADAR_MANAGER.save_data(target, path, filename, x, y, z);
 }
 
 // Функция получения количества активных ботов
@@ -152,7 +164,7 @@ async fn control(name: String, options: serde_json::Value, group: String) {
 
   emit_message("Управление", format!("Группа ботов с названием '{}' приняла команду '{}'", group, name));
 
-  ModuleManager::control(name, options, group).await;
+  MODULE_MANAGER.control(name, options, group).await;
 }
 
 // Функция выполнения быстрых задач
@@ -171,7 +183,7 @@ async fn quick_task(name: String) {
 
   emit_message("Быстрая задача", format!("{} ботов получили быструю задачу '{}'", get_active_bots_count(), name));
 
-  QuickTaskManager::execute(name).await;
+  QUICK_TASK_MANAGER.execute(name);
 }
 
 // Функция открытия URL в браузере
@@ -191,15 +203,12 @@ fn exit() {
 pub fn run() {
   tauri::Builder::default()
     .setup(|app| {
-      let app_handle = app.handle().clone();
-            
-      init_flow_manager(FlowManager::new(app_handle));
-            
+      init_flow_manager(FlowManager::new(app.handle().clone()));  
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
-      exit, launch_bots, stop_bots, 
-      get_bot_profiles, send_message, disconnect_bot,
+      exit, launch_bots, stop_bots, get_bot_profiles, 
+      send_message, reset_bot, disconnect_bot,
       get_radar_data, save_radar_data, set_group,
       get_active_bots_count, get_memory_usage,
       control, quick_task, open_url

@@ -20,7 +20,11 @@ pub struct ActionOptions {
 }
 
 impl ActionModule {
-  pub async fn jumping(bot: &Client, options: ActionOptions) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub async fn jumping(&self, bot: &Client, options: ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {
@@ -40,7 +44,7 @@ impl ActionModule {
     }
   } 
 
-  pub async fn shifting(bot: &Client, options: ActionOptions) {
+  pub async fn shifting(&self, bot: &Client, options: ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {
@@ -62,7 +66,7 @@ impl ActionModule {
     }
   } 
 
-  pub async fn waving(bot: &Client, options: ActionOptions) {
+  pub async fn waving(&self, bot: &Client, options: ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {
@@ -86,7 +90,7 @@ impl ActionModule {
     }
   }
 
-  pub fn stop(bot: &Client, action: &str) {
+  pub fn stop(&self, bot: &Client, action: &str) {
     TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task(action);
 
     match action {

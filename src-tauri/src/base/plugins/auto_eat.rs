@@ -1,16 +1,15 @@
+use azalea::prelude::*;
 use azalea::entity::metadata::Health;
 use azalea::inventory::ItemStack;
 use azalea::local_player::Hunger;
-use azalea::prelude::*;
 use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::registry::builtin::ItemKind;
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::stop_bot_sprinting;
 use crate::tools::*;
-use crate::common::{take_item, start_use_item, release_use_item};
+use crate::common::{stop_bot_sprinting, take_item, start_use_item};
 
 
 #[derive(Clone)]
@@ -22,7 +21,11 @@ struct Food {
 pub struct AutoEatPlugin;
 
 impl AutoEatPlugin {
-  pub fn enable(bot: Client) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn enable(&'static self, bot: Client) {
     tokio::spawn(async move {
       loop {
         if let Some(arc) = get_flow_manager() {
@@ -31,14 +34,14 @@ impl AutoEatPlugin {
           }
         }
 
-        Self::eat(&bot).await;
+        self.eat(&bot).await;
 
         sleep(Duration::from_millis(50)).await;
       }
     });
   } 
 
-  async fn eat(bot: &Client) {
+  async fn eat(&self, bot: &Client) {
     let satiety = if let Some(hunger) = bot.get_component::<Hunger>() {
       hunger.food
     } else {
@@ -54,9 +57,9 @@ impl AutoEatPlugin {
     let nickname = bot.username();
 
     if satiety < 20 {
-      let food_list = Self::find_food_in_inventory(bot);
+      let food_list = self.find_food_in_inventory(bot);
 
-      if let Some(best_food) = Self::get_best_food(bot, food_list.clone()) {
+      if let Some(best_food) = self.get_best_food(bot, food_list.clone()) {
         if let Some(food_slot) = best_food.slot {
           if STATES.get_state(&nickname, "can_eating") && !STATES.get_state(&nickname, "is_drinking") {
             let mut should_eat = true;
@@ -76,7 +79,7 @@ impl AutoEatPlugin {
 
               take_item(bot, food_slot).await;
               sleep(Duration::from_millis(50)).await;
-              Self::start_eating(bot).await;
+              self.start_eating(bot).await;
               sleep(Duration::from_millis(50)).await;
 
               STATES.set_state(&nickname, "can_drinking", true);
@@ -91,13 +94,12 @@ impl AutoEatPlugin {
     }
   }
 
-  async fn start_eating(bot: &Client) {
+  async fn start_eating(&self, bot: &Client) {
     start_use_item(bot, InteractionHand::MainHand);
     sleep(Duration::from_millis(1800)).await;
-    release_use_item(bot);
   }
 
-  fn get_best_food(bot: &Client, food_list: Vec<Food>) -> Option<Food> {
+  fn get_best_food(&self, bot: &Client, food_list: Vec<Food>) -> Option<Food> {
     if let Some(health_component) = bot.get_component::<Health>() {
       if let Some(hunger_component) = bot.get_component::<Hunger>() {
         let health = health_component.0;
@@ -164,11 +166,11 @@ impl AutoEatPlugin {
     None
   }
 
-  fn find_food_in_inventory(bot: &Client) -> Vec<Food> {
+  fn find_food_in_inventory(&self, bot: &Client) -> Vec<Food> {
     let mut food_list = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if let Some(food) = Self::is_food(Some(slot), item) {
+      if let Some(food) = self.is_food(Some(slot), item) {
         food_list.push(food);
       }
     }
@@ -176,7 +178,7 @@ impl AutoEatPlugin {
     food_list
   }
 
-  fn is_food(slot: Option<usize>, item: &ItemStack) -> Option<Food> {
+  fn is_food(&self, slot: Option<usize>, item: &ItemStack) -> Option<Food> {
     match item.kind() {
       ItemKind::GoldenApple => return Some(Food { slot: slot, priority: 3 }),
       ItemKind::EnchantedGoldenApple => return Some(Food { slot: slot, priority: 3 }),

@@ -29,7 +29,11 @@ pub struct AntiFallOptions {
 }
 
 impl AntiFallModule {
-  fn exist_blocks_below(bot: &Client, distance_to_ground: i32) -> bool {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn exist_blocks_below(&self, bot: &Client, distance_to_ground: i32) -> bool {
     let pos = bot.position();
 
     for y in 0..=distance_to_ground {
@@ -45,7 +49,7 @@ impl AntiFallModule {
     false
   }
 
-  fn exist_water_below(bot: &Client, distance_to_ground: i32) -> bool {
+  fn exist_water_below(&self, bot: &Client, distance_to_ground: i32) -> bool {
     let pos = bot.position();
 
     for y in 0..=distance_to_ground {
@@ -63,7 +67,7 @@ impl AntiFallModule {
     false
   }
 
-  async fn take_water_bucket(bot: &Client) -> bool {
+  async fn take_water_bucket(&self, bot: &Client) -> bool {
     let menu = bot.menu();
 
     for (slot, item) in menu.slots().iter().enumerate() {
@@ -78,12 +82,12 @@ impl AntiFallModule {
     false
   }
 
-  async fn hovering_anti_fall(bot: &Client, options: AntiFallOptions) {
+  async fn hovering_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
     loop {
       let velocity_y = get_bot_physics(bot).velocity.y;
 
       if velocity_y < options.fall_velocity.unwrap_or(-0.5) {
-        if Self::exist_blocks_below(bot, options.distance_to_ground.unwrap_or(4)) {
+        if self.exist_blocks_below(bot, options.distance_to_ground.unwrap_or(4)) {
           let duration = Instant::now() + Duration::from_millis(randuint(300, 450));
 
           loop {
@@ -105,12 +109,12 @@ impl AntiFallModule {
     }
   }
 
-  async fn teleport_anti_fall(bot: &Client, options: AntiFallOptions) {
+  async fn teleport_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
     loop {
       let velocity_y = get_bot_physics(bot).velocity.y;
 
       if velocity_y < options.fall_velocity.unwrap_or(-0.5) {
-        if Self::exist_blocks_below(bot, options.distance_to_ground.unwrap_or(4)) {
+        if self.exist_blocks_below(bot, options.distance_to_ground.unwrap_or(4)) {
           let pos = bot.position();
           let fake_pos = Vec3::new(pos.x, pos.y + randfloat(0.015, 0.022), pos.z);
 
@@ -130,20 +134,20 @@ impl AntiFallModule {
     }
   }
 
-  async fn water_drop_anti_fall(bot: &Client, options: AntiFallOptions) {
+  async fn water_drop_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
     let distance_to_ground = options.distance_to_ground.unwrap_or(4);
 
     loop {
       let velocity_y = get_bot_physics(bot).velocity.y;
 
       if velocity_y < options.fall_velocity.unwrap_or(-0.5) {
-        if Self::exist_blocks_below(bot, distance_to_ground) {
+        if self.exist_blocks_below(bot, distance_to_ground) {
           let y_rot = bot.direction().0;
 
           bot.set_direction(y_rot, randfloat(85.0, 89.0) as f32);
 
-          if Self::take_water_bucket(bot).await {
-            if !Self::exist_water_below(bot, distance_to_ground) {
+          if self.take_water_bucket(bot).await {
+            if !self.exist_water_below(bot, distance_to_ground) {
               sleep(Duration::from_millis(50)).await;
 
               let direction = bot.direction();
@@ -159,7 +163,7 @@ impl AntiFallModule {
 
           sleep(Duration::from_millis(50)).await;
 
-          if Self::exist_water_below(bot, distance_to_ground) {
+          if self.exist_water_below(bot, distance_to_ground) {
             let direction = bot.direction();
             
             bot.write_packet(ServerboundUseItem {
@@ -176,16 +180,16 @@ impl AntiFallModule {
     }
   }
 
-  pub async fn enable(bot: &Client, options: AntiFallOptions) {
+  pub async fn enable(&self, bot: &Client, options: AntiFallOptions) {
     match options.mode.as_str() {
-      "hovering" => { Self::hovering_anti_fall(bot, options).await; },
-      "teleport" => { Self::teleport_anti_fall(bot, options).await; },
-      "water-drop" => { Self::water_drop_anti_fall(bot, options).await; },
+      "hovering" => { self.hovering_anti_fall(bot, options).await; },
+      "teleport" => { self.teleport_anti_fall(bot, options).await; },
+      "water-drop" => { self.water_drop_anti_fall(bot, options).await; },
       _ => {}
     }
   }
 
-  pub fn stop(nickname: &String) {
+  pub fn stop(&self, nickname: &String) {
     TASKS.get(nickname).unwrap().write().unwrap().kill_task("anti-fall");
   }
 }

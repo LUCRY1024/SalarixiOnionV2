@@ -4,7 +4,6 @@ use azalea::entity::metadata::Health;
 use azalea::local_player::Hunger;
 use azalea::protocol::common::client_information::ParticleStatus;
 use azalea::protocol::packets::game::ClientboundGamePacket;
-use azalea::swarm::*;
 use azalea::prelude::*;
 use azalea::entity::HumanoidArm;
 use azalea::{ClientInformation, NoState};
@@ -24,21 +23,6 @@ const ACCOUNTS_WITH_SKINS: &[&str] = &[
 ];
 
 
-// Swarm-обработчик
-pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, _state: NoSwarmState) {
-  match event {
-    SwarmEvent::Init => {
-      if let Some(arc) = get_flow_manager() {
-        let mut fm = arc.write();
-
-        fm.swarm = Some(swarm.clone());
-      }
-    },
-    _ => {}
-  }
-}
-
-// Single-обработчик
 pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyhow::Result<()> {
   match event {
     Event::Login => {
@@ -83,34 +67,8 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
       let nickname = bot.username();
 
       if let Some(arc) = get_flow_manager() {
-        if let Some(options) = arc.read().options.clone() {
-          if options.plugins.auto_armor {
-            AutoArmorPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_totem {
-            AutoTotemPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_eat {
-            AutoEatPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_potion {
-            AutoPotionPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_look {
-            AutoLookPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_shield {
-            AutoShieldPlugin::enable(bot.clone());
-          }
-
-          if options.plugins.auto_repair {
-            AutoRepairPlugin::enable(bot.clone());
-          }
+        if let Some(options) = &arc.read().options {
+          PLUGIN_MANAGER.load(&bot, &options.plugins);
         }
       }
 
@@ -249,6 +207,7 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
       }
 
       PROFILES.set_bool(&nickname, "captcha_caught", false);
+      STATES.reset(&nickname);
       TASKS.remove(&nickname);
 
       PROFILES.set_str(&nickname, "status", "Оффлайн");
@@ -276,8 +235,8 @@ pub async fn single_handler(bot: Client, event: Event, _state: NoState) -> anyho
       let mut message = packet.message().to_html();
 
       if let Some(arc) = get_flow_manager() {
-        for bot in arc.write().bots.clone().into_values() {
-          if bot.username() == sender {
+        for (nickname, _) in arc.write().bots.iter() {
+          if *nickname == sender {
             message = format!("%hbБот%sc ~ {}", message);
             break;
           }

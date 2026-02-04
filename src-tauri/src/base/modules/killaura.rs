@@ -52,18 +52,22 @@ struct KillauraConfig {
 }
 
 impl KillauraModule {
-  fn create_adaptive_config(target: String) -> KillauraConfig {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn create_adaptive_config(&self, target: String, chase_distance: Option<f64>, min_distance_to_target: Option<f64>) -> KillauraConfig {
     KillauraConfig {
       target: target,
       weapon_slot: None,
       distance: 3.1,
       delay: 500,
-      chase_distance: 10.0,
-      min_distance_to_target: 3.0
+      chase_distance: chase_distance.unwrap_or(10.0),
+      min_distance_to_target: min_distance_to_target.unwrap_or(3.0)
     }
   }
 
-  fn find_nearest_entity(bot: &Client, target: &String, distance: f64) -> Option<Entity> {
+  fn find_nearest_entity(&self, bot: &Client, target: &String, distance: f64) -> Option<Entity> {
     let mut nearest_entity = None;
 
     let eye_pos = bot.eye_position();
@@ -96,7 +100,7 @@ impl KillauraModule {
     nearest_entity
   }
 
-  async fn auto_weapon(bot: &Client, weapon: &String) {
+  async fn auto_weapon(&self, bot: &Client, weapon: &String) {
     let mut weapons = vec![];
 
     for (slot, item) in bot.menu().slots().iter().enumerate() {
@@ -163,7 +167,7 @@ impl KillauraModule {
     });
   }
 
-  fn chase(bot: Client, target: String, distance: f64, min_distance_to_target: f64) {
+  fn chase(&'static self, bot: Client, target: String, distance: f64, min_distance_to_target: f64) {
     tokio::spawn(async move {
       let nickname = bot.username();
 
@@ -173,7 +177,7 @@ impl KillauraModule {
           break;
         }
 
-        let nearest_entity = Self::find_nearest_entity(&bot, &target, distance);
+        let nearest_entity = self.find_nearest_entity(&bot, &target, distance);
 
         if let Some(entity) = nearest_entity {
           let eye_pos = bot.eye_position();
@@ -214,7 +218,7 @@ impl KillauraModule {
     });
   }
 
-  fn aiming(bot: Client, target: String, distance: f64) {
+  fn aiming(self, bot: Client, target: String, distance: f64) {
     tokio::spawn(async move {
       let nickname = bot.username();
 
@@ -223,7 +227,7 @@ impl KillauraModule {
           break;
         }
 
-        if let Some(entity) = Self::find_nearest_entity(&bot, &target, distance) {
+        if let Some(entity) = self.find_nearest_entity(&bot, &target, distance) {
           if STATES.get_state(&nickname, "can_looking") {
             STATES.set_state(&nickname, "can_looking", false);
             STATES.set_state(&nickname, "is_looking", true);
@@ -246,9 +250,9 @@ impl KillauraModule {
     });
   }
 
-  async fn moderate_killaura(bot: &Client, options: KillauraOptions) {
+  async fn moderate_killaura(&'static self, bot: &Client, options: KillauraOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.target.clone())
+      self.create_adaptive_config(options.target.clone(), options.chase_distance, options.min_distance_to_target)
     } else {
       KillauraConfig { 
         target: options.target.clone(), 
@@ -260,10 +264,10 @@ impl KillauraModule {
       }
     };
 
-    Self::aiming(bot.clone(), config.target.clone(), config.distance);
+    Self::aiming(self.clone(), bot.clone(), config.target.clone(), config.distance);
 
     if options.use_chase {
-      Self::chase(bot.clone(), config.target.clone(), config.chase_distance, config.min_distance_to_target);
+      self.chase(bot.clone(), config.target.clone(), config.chase_distance, config.min_distance_to_target);
     }
 
     if options.use_dodging {
@@ -274,20 +278,20 @@ impl KillauraModule {
 
     loop {
       if !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
-        if let Some(entity) = Self::find_nearest_entity(bot, &config.target, config.distance) {
+        if let Some(entity) = self.find_nearest_entity(bot, &config.target, config.distance) {
           STATES.set_state(&nickname, "is_attacking", true);
 
           if options.use_auto_weapon {
-            Self::auto_weapon(bot, &options.weapon).await;
+            self.auto_weapon(bot, &options.weapon).await;
           } else {
             if let Some(slot) = config.weapon_slot {
               if slot <= 8 {
                 bot.set_selected_hotbar_slot(slot);
               } else {
-                Self::auto_weapon(bot, &options.weapon).await;
+                self.auto_weapon(bot, &options.weapon).await;
               }
             } else {
-              Self::auto_weapon(bot, &options.weapon).await;
+              self.auto_weapon(bot, &options.weapon).await;
             }
           }
 
@@ -306,9 +310,9 @@ impl KillauraModule {
     }
   }
 
-  async fn aggressive_killaura(bot: &Client, options: KillauraOptions) {
+  async fn aggressive_killaura(&'static self, bot: &Client, options: KillauraOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      Self::create_adaptive_config(options.target.clone())
+      self.create_adaptive_config(options.target.clone(), options.chase_distance, options.min_distance_to_target)
     } else {
       KillauraConfig { 
         target: options.target.clone(), 
@@ -321,7 +325,7 @@ impl KillauraModule {
     };
 
     if options.use_chase {
-      Self::chase(bot.clone(), config.target.clone(), config.chase_distance, config.min_distance_to_target);
+      self.chase(bot.clone(), config.target.clone(), config.chase_distance, config.min_distance_to_target);
     }
 
     if options.use_dodging {
@@ -332,20 +336,20 @@ impl KillauraModule {
 
     loop {
       if !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
-        if let Some(_) = Self::find_nearest_entity(bot, &config.target, config.distance) {
+        if let Some(_) = self.find_nearest_entity(bot, &config.target, config.distance) {
           STATES.set_state(&nickname, "is_attacking", true);
           
           if options.use_auto_weapon {
-            Self::auto_weapon(bot, &options.weapon).await;
+            self.auto_weapon(bot, &options.weapon).await;
           } else {
             if let Some(slot) = config.weapon_slot {
               if slot <= 8 {
                 bot.set_selected_hotbar_slot(slot);
               } else {
-                Self::auto_weapon(bot, &options.weapon).await;
+                self.auto_weapon(bot, &options.weapon).await;
               }
             } else {
-              Self::auto_weapon(bot, &options.weapon).await;
+              self.auto_weapon(bot, &options.weapon).await;
             }
           }
 
@@ -354,7 +358,7 @@ impl KillauraModule {
             sleep(Duration::from_millis(randuint(50, 150))).await;
           }
           
-          if let Some(e) = Self::find_nearest_entity(bot, &config.target, config.distance) {
+          if let Some(e) = self.find_nearest_entity(bot, &config.target, config.distance) {
             bot.attack(e);
           }
         }
@@ -366,15 +370,15 @@ impl KillauraModule {
     }
   }
 
-  pub async fn enable(bot: &Client, options: KillauraOptions) {
+  pub async fn enable(&'static self, bot: &Client, options: KillauraOptions) {
     match options.mode.as_str() {
-      "moderate" => { Self::moderate_killaura(bot, options).await; },
-      "aggressive" => { Self::aggressive_killaura(bot, options).await; },
+      "moderate" => { self.moderate_killaura(bot, options).await; },
+      "aggressive" => { self.aggressive_killaura(bot, options).await; },
       _ => {}
     }
   }
 
-  pub fn stop(bot: &Client) {
+  pub fn stop(&self, bot: &Client) {
     let nickname = bot.username();
 
     TASKS.get(&nickname).unwrap().write().unwrap().kill_task("killaura");

@@ -1,138 +1,168 @@
-use azalea::Vec3;
+use azalea::{Vec3, WalkDirection};
 use azalea::bot::BotClientExt;
-use azalea::prelude::{ContainerClientExt, PathfinderClientExt};
+use azalea::prelude::PathfinderClientExt;
 use azalea::inventory::operations::ThrowClick;  
 use azalea::pathfinder::goals::XZGoal;  
 use azalea::pathfinder::PathfinderOpts;
 use azalea::pathfinder::astar::PathfinderTimeout;
 use azalea::pathfinder::moves;
-use azalea::entity::Physics;
-use azalea::interact::SwingArmEvent;
 use azalea::core::position::BlockPos;
+use std::sync::Arc;
+use once_cell::sync::Lazy;
 use std::f32::consts::PI; 
 use core::time::Duration;
 use tokio::time::sleep;
 
-use crate::base::get_flow_manager;
-use crate::tools::{randfloat, randuint};
-use crate::common::get_average_coordinates_of_bots;
+use crate::base::{STATES, get_flow_manager};
+use crate::tools::{randfloat, randint, randuint};
+use crate::common::{get_average_coordinates_of_bots, get_inventory, go, set_bot_velocity_y, stop_bot_sprinting, stop_bot_walking, swing_arm, take_item, this_is_solid_block};
 
+
+pub static QUICK_TASK_MANAGER: Lazy<Arc<QuickTaskManager>> = Lazy::new(|| { Arc::new(QuickTaskManager::new()) });
 
 // Структура QuickTaskManager
 pub struct QuickTaskManager;
 
 impl QuickTaskManager {
-  pub async fn execute(name: String) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub fn execute(&self, name: String) {
     if let Some(arc) = get_flow_manager() {
       let fm = arc.write();
       
       if fm.bots.len() > 0 {
-        match name.as_str() {
-          "clear-inventory" => {
-            for bot in fm.bots.clone().into_values() {
-              let inventory = bot.get_inventory();  
+        for (number, (nickname, bot)) in fm.bots.clone().into_iter().enumerate() {
+          match name.as_str() {
+            "clear-inventory" => {
+              tokio::spawn(async move {
+                if let Some(inventory) = get_inventory(&bot) {
+                  stop_bot_sprinting(&bot).await;
+                  stop_bot_walking(&bot).await;
 
-              for slot in 0..=48 {  
-                if let Some(menu) = inventory.menu() {  
-                  if let Some(s) = menu.slot(slot) {
-                    if !s.is_empty() {  
-                      inventory.click(ThrowClick::All { slot: slot as u16 });  
+                  for slot in 0..=48 {  
+                    if let Some(menu) = inventory.menu() {  
+                      if let Some(s) = menu.slot(slot) {
+                        if !s.is_empty() {  
+                          inventory.click(ThrowClick::All { slot: slot as u16 });  
+                        }  
+                      }
                     }  
                   }
-                }  
-              }
-            }
-          },
-          "move-forward" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                bot.walk(azalea::WalkDirection::Forward);
-                sleep(Duration::from_millis(100)).await;
-                bot.walk(azalea::WalkDirection::None);
+
+                  STATES.set_mutual_states(&nickname, "walking", false);
+                  STATES.set_mutual_states(&nickname, "sprinting", false);
+                }
               });
-            }
-          },
-          "move-backward" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                bot.walk(azalea::WalkDirection::Backward);
+            },
+            "move-forward" => {
+              tokio::spawn(async move {
+                go(&bot, WalkDirection::Forward);
                 sleep(Duration::from_millis(100)).await;
-                bot.walk(azalea::WalkDirection::None);
+                bot.walk(WalkDirection::None);
+                STATES.set_mutual_states(&nickname, "walking", false);
               });
-            }
-          },
-          "move-left" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                bot.walk(azalea::WalkDirection::Left);
+            },
+            "move-backward" => {
+              tokio::spawn(async move {
+                go(&bot, WalkDirection::Backward);
                 sleep(Duration::from_millis(100)).await;
-                bot.walk(azalea::WalkDirection::None);
+                bot.walk(WalkDirection::None);
+                STATES.set_mutual_states(&nickname, "walking", false);
               });
-            }
-          },
-          "move-right" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                bot.walk(azalea::WalkDirection::Right);
+            },
+            "move-left" => {
+              tokio::spawn(async move {
+                go(&bot, WalkDirection::Left);
                 sleep(Duration::from_millis(100)).await;
-                bot.walk(azalea::WalkDirection::None);
+                bot.walk(WalkDirection::None);
+                STATES.set_mutual_states(&nickname, "walking", false);
               });
-            }
-          },
-          "jump" => {
-            for bot in fm.bots.clone().into_values() {
+            },
+            "move-right" => {
+              tokio::spawn(async move {
+                go(&bot, WalkDirection::Right);
+                sleep(Duration::from_millis(100)).await;
+                bot.walk(WalkDirection::None);
+                STATES.set_mutual_states(&nickname, "walking", false);
+              });
+            },
+            "jump" => {
               bot.jump();
-            }
-          },
-          "shift" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
+            },
+            "shift" => {
+              tokio::spawn(async move {
                 bot.set_crouching(true);
                 sleep(Duration::from_millis(200)).await;
                 bot.set_crouching(false);
               });
-            }
-          },
-          "quit" => {
-            for bot in fm.bots.clone().into_values() {
+            },
+            "quit" => {
               bot.disconnect();
-            }
-          },
-          "fly" => {
-            for bot in fm.bots.clone().into_values() {
-              let mut ecs = bot.ecs.lock();  
-              let mut physics = ecs.get_mut::<Physics>(bot.entity).unwrap();  
-                  
-              physics.velocity.y = randfloat(0.22, 0.31);  
-            }
-          },
-          "rise" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                let original_direction_1 = bot.direction();  
-      
-                bot.set_direction(original_direction_1.0 + randfloat(-5.0, 5.0) as f32, randfloat(40.0, 58.0) as f32);  
-                bot.wait_ticks(randuint(1, 2) as usize).await;
-                bot.jump();    
-
-                let original_direction_2 = bot.direction();  
-
-                bot.set_direction(original_direction_2.0 + randfloat(-5.0, 5.0) as f32, randfloat(86.0, 90.0) as f32);  
-                bot.wait_ticks(randuint(5, 7) as usize).await;
-
-                bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });  
-
-                bot.start_use_item();
-
-                bot.wait_ticks(randuint(3, 5) as usize).await;
-                    
-                bot.set_direction(original_direction_1.0, original_direction_1.1);  
+            },
+            "fly" => {
+              tokio::spawn(async move {
+                for i in 0..randint(3,5) {
+                  set_bot_velocity_y(&bot, randfloat(0.022 * i as f64, 0.031 * i as f64));
+                  sleep(Duration::from_millis(50)).await;
+                }
               });
-            }
-          },
-          "capsule" => {
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
+            },
+            "rise" => {
+              tokio::spawn(async move {
+                if STATES.get_state(&nickname, "can_looking") && STATES.get_state(&nickname, "can_interacting") {
+                  let mut block_slot = None;
+
+                  for (slot, item) in bot.menu().slots().iter().enumerate() {
+                    if !item.is_empty() {
+                      if this_is_solid_block(item.kind()) {
+                        block_slot = Some(slot);
+                        break;
+                      }
+                    }
+                  }
+
+                  if let Some(slot) = block_slot {
+                    stop_bot_sprinting(&bot).await;
+                    stop_bot_walking(&bot).await;
+
+                    STATES.set_state(&nickname, "can_walking", false);
+                    STATES.set_state(&nickname, "can_sprinting", false);
+                    STATES.set_mutual_states(&nickname, "looking", true);
+                    STATES.set_mutual_states(&nickname, "interacting", true);
+
+                    take_item(&bot, slot).await;
+
+                    let original_direction_1 = bot.direction();  
+      
+                    bot.set_direction(original_direction_1.0 + randfloat(-5.0, 5.0) as f32, randfloat(40.0, 58.0) as f32);  
+                    sleep(Duration::from_millis(randuint(50, 100))).await;
+                    bot.jump();    
+
+                    let original_direction_2 = bot.direction();  
+
+                    bot.set_direction(original_direction_2.0 + randfloat(-5.0, 5.0) as f32, randfloat(86.0, 90.0) as f32);  
+                    sleep(Duration::from_millis(randuint(250, 350))).await;
+
+                    swing_arm(&bot); 
+
+                    bot.start_use_item();
+
+                    sleep(Duration::from_millis(randuint(150, 250))).await;
+                        
+                    bot.set_direction(original_direction_1.0, original_direction_1.1); 
+
+                    STATES.set_state(&nickname, "can_walking", true);
+                    STATES.set_state(&nickname, "can_sprinting", true);
+                    STATES.set_mutual_states(&nickname, "looking", false);
+                    STATES.set_mutual_states(&nickname, "interacting", false);
+                  }
+                }
+              });
+            },
+            "capsule" => {
+              tokio::spawn(async move {
                 let position = bot.position();
 
                 let block_positions = vec![
@@ -151,82 +181,100 @@ impl QuickTaskManager {
                 let mut count = 0;
 
                 for pos in block_positions {
-                  count = count + 1;
+                  let mut block_slot = None;
 
-                  if count == 10 {
-                    bot.wait_ticks(randuint(4, 5) as usize).await;
+                  for (slot, item) in bot.menu().slots().iter().enumerate() {
+                    if !item.is_empty() {
+                      if this_is_solid_block(item.kind()) {
+                        block_slot = Some(slot);
+                        break;
+                      }
+                    }
                   }
 
-                  if count == 9 {
-                    bot.jump();
-                    bot.wait_ticks(1).await;
-                    bot.set_crouching(true);
-                    bot.wait_ticks(randuint(2, 3) as usize).await;                  
+                  if let Some(slot) = block_slot {
+                    if STATES.get_state(&nickname, "can_looking") && STATES.get_state(&nickname, "can_interacting") {
+                      stop_bot_sprinting(&bot).await;
+                      stop_bot_walking(&bot).await;
+
+                      STATES.set_state(&nickname, "can_walking", false);
+                      STATES.set_state(&nickname, "can_sprinting", false);
+                      STATES.set_mutual_states(&nickname, "looking", true);
+                      STATES.set_mutual_states(&nickname, "interacting", true);
+
+                      take_item(&bot, slot).await;
+
+                      count = count + 1;
+
+                      if count == 10 {
+                        sleep(Duration::from_millis(randuint(150, 200))).await;
+                      }
+
+                      if count == 9 {
+                        bot.jump();
+                        sleep(Duration::from_millis(50)).await;
+                        bot.set_crouching(true);
+                        sleep(Duration::from_millis(randuint(100, 150))).await;            
+                      }
+
+                      bot.look_at(Vec3::new(pos.x as f64, pos.y as f64, pos.z as f64));
+
+                      sleep(Duration::from_millis(randuint(50, 100))).await;
+
+                      swing_arm(&bot);
+
+                      bot.start_use_item();  
+
+                      if count == 10 {
+                        bot.set_crouching(false);
+                      }
+
+                      STATES.set_state(&nickname, "can_walking", true);
+                      STATES.set_state(&nickname, "can_sprinting", true);
+                      STATES.set_mutual_states(&nickname, "looking", false);
+                      STATES.set_mutual_states(&nickname, "interacting", false);
+                      
+                      sleep(Duration::from_millis(randuint(100, 150))).await;
+                    }
                   }
-
-                  bot.look_at(Vec3::new(pos.x as f64, pos.y as f64, pos.z as f64));
-
-                  bot.wait_ticks(randuint(1, 2) as usize).await;
-
-                  bot.ecs.lock().trigger(SwingArmEvent { entity: bot.entity });
-
-                  bot.block_interact(pos);  
-
-                  if count == 10 {
-                    bot.set_crouching(false);
-                  }
-                  
-                  bot.wait_ticks(randuint(2, 3) as usize).await;
                 }
               });
-            }
-          },
-          "unite" => {
-            let mut positions = vec![];
+            },
+            "unite" => {
+              let mut positions = vec![];
 
-            for bot in fm.bots.clone().into_values() {
-              positions.push(bot.position());
-            }
+              for (_, bot) in fm.bots.iter() {
+                positions.push(bot.position());
+              }
 
-            let average_cords = get_average_coordinates_of_bots(positions);
+              let average_cords = get_average_coordinates_of_bots(positions);
 
-            for bot in fm.bots.clone().into_values() {
-              tokio::task::spawn(async move {
-                bot.start_goto_with_opts(
-                  XZGoal { x: average_cords.0 as i32, z: average_cords.2 as i32 },  
-                  PathfinderOpts::new()  
-                    .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
-                    .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
-                    .allow_mining(false)  
-                    .successors_fn(moves::basic::basic_move)  
-                );
-              });
-            }
-          },
-          "turn" => {
-            for bot in fm.bots.clone().into_values() {
+              bot.start_goto_with_opts(
+                XZGoal { x: average_cords.0 as i32, z: average_cords.2 as i32 },  
+                PathfinderOpts::new()  
+                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
+                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
+                  .allow_mining(false)  
+                  .successors_fn(moves::basic::basic_move)  
+              );
+            },
+            "turn" => {
               let direction = bot.direction();
               bot.set_direction(direction.0 - 90.0, direction.1);
-            }
-          },
-          "zero" => {
-            for bot in fm.bots.clone().into_values() {
+            },
+            "zero" => {
               bot.set_direction(0.0, 0.0);
-            }
-          },
-          "form-circle" => {
-            let mut positions = vec![];
-            let mut bots = vec![];
+            },
+            "form-circle" => {
+              let mut positions = vec![];
 
-            for bot in fm.bots.clone().into_values() {
-              positions.push(bot.position());
-              bots.push(bot);
-            }
+              for (_, bot) in fm.bots.iter() {
+                positions.push(bot.position());
+              }
 
-            let average_cords = get_average_coordinates_of_bots(positions);
-            
-            for (i, bot) in bots.iter().enumerate() {  
-              let angle = 2.0 * PI * (i as f32) / (bots.len() as f32);  
+              let average_cords = get_average_coordinates_of_bots(positions);
+              
+              let angle = 2.0 * PI * (number as f32) / (fm.bots.len() as f32);  
               let x = average_cords.0 + 6.0 * angle.cos() as f64;  
               let z = average_cords.2 + 6.0 * angle.sin() as f64;  
 
@@ -238,22 +286,18 @@ impl QuickTaskManager {
                   .allow_mining(false)  
                   .successors_fn(moves::basic::basic_move) 
               );
-            }  
-          },
-          "form-line" => { 
-            let mut positions = vec![];
-            let mut bots = vec![];
+            },
+            "form-line" => { 
+              let mut positions = vec![];
 
-            for bot in fm.bots.clone().into_values() {
-              positions.push(bot.position());
-              bots.push(bot);
-            }
+              for (_, bot) in fm.bots.iter() {
+                positions.push(bot.position());
+              }
 
-            let average_cords = get_average_coordinates_of_bots(positions);
+              let average_cords = get_average_coordinates_of_bots(positions);
 
-            for (i, bot) in bots.iter().enumerate() {  
-              let x = average_cords.0 + 1.0 * (i as f64 * 1.0);  
-              let z = average_cords.2 + 0.0 * (i as f64 * 1.0);  
+              let x = average_cords.0 + 1.0 * (number as f64 * 1.0);  
+              let z = average_cords.2 + 0.0 * (number as f64 * 1.0);  
                       
               bot.start_goto_with_opts(
                 XZGoal { x: x as i32, z: z as i32 },  
@@ -263,14 +307,12 @@ impl QuickTaskManager {
                   .allow_mining(false)  
                   .successors_fn(moves::basic::basic_move)  
               );
-            }  
-          },
-          "pathfinder-stop" => {
-            for bot in fm.bots.clone().into_values() {
+            },
+            "pathfinder-stop" => {
               bot.stop_pathfinding();
-            }
-          },
-          _ => {}
+            },
+            _ => {}
+          }
         }
       }
     }

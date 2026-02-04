@@ -20,7 +20,11 @@ pub struct InventoryOptions {
 }
 
 impl InventoryModule { 
-  pub async fn action(bot: &Client, options: InventoryOptions) {
+  pub fn new() -> Self {
+    Self
+  }
+
+  pub async fn action(&self, bot: &Client, options: InventoryOptions) {
     if let Some(s) = options.slot {
       if let Some(inventory) = get_inventory(bot) {
         let nickname = bot.username();

@@ -21,7 +21,11 @@ pub struct StealerOptions {
 }
 
 impl StealerModule {
-  fn check_block_id(block_id: u16, target: &String) -> bool {
+  pub fn new() -> Self {
+    Self
+  }
+
+  fn check_block_id(&self, block_id: u16, target: &String) -> bool {
     match target.as_str() {
       "chest" => {
         return vec![3793, 3787, 3805, 3799].contains(&block_id);
@@ -43,7 +47,7 @@ impl StealerModule {
     false
   }
 
-  fn find_nearest_targets(bot: &Client, center: Vec3, target: &String, radius: i32) -> Vec<azalea::BlockPos> {
+  fn find_nearest_targets(&self, bot: &Client, center: Vec3, target: &String, radius: i32) -> Vec<azalea::BlockPos> {
     let mut positions = Vec::new();  
         
     for x in -radius..=radius {  
@@ -56,7 +60,7 @@ impl StealerModule {
           );  
                     
           if let Some(state) = get_block_state(bot, block_pos) {  
-            if Self::check_block_id(state.id(), target) {  
+            if self.check_block_id(state.id(), target) {  
               positions.push(block_pos);  
             }  
           } 
@@ -67,7 +71,7 @@ impl StealerModule {
     positions  
   }
 
-  async fn extract_all_items(container: &ContainerHandle) {  
+  async fn extract_all_items(&self, container: &ContainerHandle) {  
     let menu = container.menu().unwrap();  
        
     for slot in 0..=26 {  
@@ -79,12 +83,12 @@ impl StealerModule {
     }  
   }
 
-  pub async fn enable(bot: &Client, options: StealerOptions) {
+  pub async fn enable(&self, bot: &Client, options: StealerOptions) {
     loop {
       let position = bot.position();  
       let direction = bot.direction();
 
-      let target_positions = Self::find_nearest_targets(bot, position.clone(), &options.target, if let Some(radius) = options.radius { radius } else { 4 });
+      let target_positions = self.find_nearest_targets(bot, position.clone(), &options.target, if let Some(radius) = options.radius { radius } else { 4 });
         
       for pos in target_positions {  
         bot.look_at(pos.center());  
@@ -92,7 +96,7 @@ impl StealerModule {
         bot.wait_ticks(randticks(1, 2)).await;
             
         if let Some(container) = bot.open_container_at(pos).await {  
-          Self::extract_all_items(&container).await;  
+          self.extract_all_items(&container).await;  
           bot.wait_ticks(randticks(4, 6)).await;
         }  
       } 
@@ -103,7 +107,7 @@ impl StealerModule {
     }
   } 
 
-  pub fn stop(bot: &Client) {
+  pub fn stop(&self, bot: &Client) {
     TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("stealer");
     bot.get_inventory().close();
   }
