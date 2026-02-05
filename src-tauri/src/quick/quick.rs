@@ -2,10 +2,6 @@ use azalea::{Vec3, WalkDirection};
 use azalea::bot::BotClientExt;
 use azalea::prelude::PathfinderClientExt;
 use azalea::inventory::operations::ThrowClick;  
-use azalea::pathfinder::goals::XZGoal;  
-use azalea::pathfinder::PathfinderOpts;
-use azalea::pathfinder::astar::PathfinderTimeout;
-use azalea::pathfinder::moves;
 use azalea::core::position::BlockPos;
 use std::sync::Arc;
 use once_cell::sync::Lazy;
@@ -15,7 +11,7 @@ use tokio::time::sleep;
 
 use crate::base::{STATES, get_flow_manager};
 use crate::tools::{randfloat, randint, randuint};
-use crate::common::{get_average_coordinates_of_bots, get_inventory, go, set_bot_velocity_y, stop_bot_sprinting, stop_bot_walking, swing_arm, take_item, this_is_solid_block};
+use crate::common::{get_average_coordinates_of_bots, get_inventory, go, go_to, set_bot_velocity_y, stop_bot_sprinting, stop_bot_walking, swing_arm, take_item, this_is_solid_block};
 
 
 pub static QUICK_TASK_MANAGER: Lazy<Arc<QuickTaskManager>> = Lazy::new(|| { Arc::new(QuickTaskManager::new()) });
@@ -249,14 +245,7 @@ impl QuickTaskManager {
 
               let average_cords = get_average_coordinates_of_bots(positions);
 
-              bot.start_goto_with_opts(
-                XZGoal { x: average_cords.0 as i32, z: average_cords.2 as i32 },  
-                PathfinderOpts::new()  
-                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
-                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
-                  .allow_mining(false)  
-                  .successors_fn(moves::basic::basic_move)  
-              );
+              go_to(bot, average_cords.0 as i32, average_cords.2 as i32);
             },
             "turn" => {
               let direction = bot.direction();
@@ -278,14 +267,7 @@ impl QuickTaskManager {
               let x = average_cords.0 + 6.0 * angle.cos() as f64;  
               let z = average_cords.2 + 6.0 * angle.sin() as f64;  
 
-              bot.start_goto_with_opts(
-                XZGoal { x: x as i32, z: z as i32 },  
-                PathfinderOpts::new()  
-                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
-                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
-                  .allow_mining(false)  
-                  .successors_fn(moves::basic::basic_move) 
-              );
+              go_to(bot, x as i32, z as i32);
             },
             "form-line" => { 
               let mut positions = vec![];
@@ -299,14 +281,7 @@ impl QuickTaskManager {
               let x = average_cords.0 + 1.0 * (number as f64 * 1.0);  
               let z = average_cords.2 + 0.0 * (number as f64 * 1.0);  
                       
-              bot.start_goto_with_opts(
-                XZGoal { x: x as i32, z: z as i32 },  
-                PathfinderOpts::new()  
-                  .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
-                  .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
-                  .allow_mining(false)  
-                  .successors_fn(moves::basic::basic_move)  
-              );
+              go_to(bot, x as i32, z as i32);
             },
             "pathfinder-stop" => {
               bot.stop_pathfinding();

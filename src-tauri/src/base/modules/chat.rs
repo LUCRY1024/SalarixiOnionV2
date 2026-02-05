@@ -232,6 +232,6 @@ impl ChatModule {
   }
 
   pub fn stop(&self, nickname: &String) {
-    TASKS.get(nickname).unwrap().write().unwrap().kill_task("spamming");
+    kill_task(nickname, "spamming");
   }
 }

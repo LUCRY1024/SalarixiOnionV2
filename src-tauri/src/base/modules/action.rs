@@ -84,14 +84,13 @@ impl ActionModule {
 
       loop {
         swing_arm(bot);
-
         sleep(Duration::from_millis(300)).await;
       }
     }
   }
 
   pub fn stop(&self, bot: &Client, action: &str) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task(action);
+    kill_task(&bot.username(), action);
 
     match action {
       "jumping" => { bot.set_jumping(false); },

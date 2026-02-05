@@ -123,3 +123,17 @@ impl TaskManager {
     false
   }
 }
+
+// Функция запуска задачи
+pub fn run_task(nickname: &String, task: &str, handle: JoinHandle<()>) {
+  if let Some(tasks) = TASKS.get(&nickname) {
+    tasks.write().unwrap().run_task(task, handle);
+  }
+}
+
+// Функция остановки задачи
+pub fn kill_task(nickname: &String, task: &str) {
+  if let Some(tasks) = TASKS.get(&nickname) {
+    tasks.write().unwrap().kill_task(task);
+  }
+}

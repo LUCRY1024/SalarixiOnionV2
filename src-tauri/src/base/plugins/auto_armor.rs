@@ -1,18 +1,17 @@
 use azalea::prelude::*;
 use azalea::inventory::ItemStack;
-use azalea::prelude::ContainerClientExt;
 use azalea::registry::builtin::ItemKind;
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::{find_empty_slot_in_invenotry, get_inventory, stop_bot_walking};
+use crate::common::{find_empty_slot_in_invenotry, get_inventory, stop_bot_sprinting, stop_bot_walking};
 
 
 #[derive(Debug, Clone)]
 struct Armor {
   part: String,
-  slot: Option<usize>,
+  slot: usize,
   priority: u8
 }
 
@@ -50,10 +49,12 @@ impl AutoArmorPlugin {
   async fn equip_armor(&self, bot: &Client) {
     let mut armors = vec![];
 
-    for (slot, item) in bot.menu().slots().iter().enumerate() {  
-      if slot > 8 {
-        if let Some(armor) = self.is_armor(item, Some(slot)) {
-          armors.push(armor);
+    for slot in 0..=48 {  
+      if let Some(item) = bot.menu().slot(slot) {
+        if slot > 8 {
+          if let Some(armor) = self.is_armor(item, slot) {
+            armors.push(armor);
+          }
         }
       }
     }
@@ -61,66 +62,60 @@ impl AutoArmorPlugin {
     let armor_set = self.get_best_armor(bot, armors);
 
     if let Some(helmet) = armor_set.helmet {
-      if let Some(slot) = helmet.slot {
-        if self.is_this_armor_better(bot, helmet) {
-          self.equip(bot, 5, slot).await;
-        }
+      if self.is_this_armor_better(bot, &helmet) {
+        self.equip(bot, helmet.slot, 5).await;
       }
     }
 
     if let Some(chestplate) = armor_set.chestplate {
-      if let Some(slot) = chestplate.slot {
-        if self.is_this_armor_better(bot, chestplate) {
-          self.equip(bot, 6, slot).await;
-        }
+      if self.is_this_armor_better(bot, &chestplate) {
+        self.equip(bot, chestplate.slot, 6).await;
       }
     }
 
     if let Some(leggings) = armor_set.leggings {
-      if let Some(slot) = leggings.slot {
-        if self.is_this_armor_better(&bot, leggings) {
-          self.equip(bot,7, slot).await;
-        }
+      if self.is_this_armor_better(&bot, &leggings) {
+        self.equip(bot, leggings.slot, 7).await;
       }
     }
 
     if let Some(boots) = armor_set.boots {
-      if let Some(slot) = boots.slot {
-        if self.is_this_armor_better(&bot, boots) {
-          self.equip(bot, 8, slot).await;
-        }
+      if self.is_this_armor_better(&bot, &boots) {
+        self.equip(bot, boots.slot, 8).await;
       }
     }
   }
 
   async fn equip(&self, bot: &Client, armor_slot: usize, target_slot: usize) {
     if let Some(inventory) = get_inventory(bot) {
-      if let Some(menu) = inventory.menu() {
-        if let Some(item) = menu.slot(armor_slot) {
-          if !item.is_empty() {
-            if let Some(empty_slot) = find_empty_slot_in_invenotry(bot) {
-              let nickname = bot.username();
+      stop_bot_walking(bot).await;
+      stop_bot_sprinting(bot).await;
 
-              stop_bot_walking(bot).await;
+      let nickname = bot.username();
 
-              inventory.left_click(armor_slot);
-              sleep(Duration::from_millis(50)).await;
-              inventory.left_click(empty_slot);
-
-              STATES.set_state(&nickname, "can_walking", true);
-              STATES.set_state(&nickname, "can_sprinting", true);
-            } else {
-              return;
-            }
+      if let Some(item) = bot.menu().slot(target_slot) {
+        if !item.is_empty() {
+          if let Some(_) = find_empty_slot_in_invenotry(bot) {
+            inventory.shift_click(target_slot);
+            sleep(Duration::from_millis(50)).await;
+          } else {
+            return;
           }
         }
       }
       
-      inventory.shift_click(target_slot);
+      inventory.shift_click(armor_slot);
+
+      sleep(Duration::from_millis(50)).await;
+
+      inventory.close();
+
+      STATES.set_state(&nickname, "can_walking", true);
+      STATES.set_state(&nickname, "can_sprinting", true);
     }
   }
 
-  fn is_armor(&self, item: &ItemStack, slot: Option<usize>) -> Option<Armor> {
+  fn is_armor(&self, item: &ItemStack, slot: usize) -> Option<Armor> {
     let mut armor = None;
 
     let helmet = "helmet".to_string();
@@ -185,38 +180,46 @@ impl AutoArmorPlugin {
     for armor in armors {
       match armor.part.as_str() {
         "helmet" => {
-          if let Some(helmet) = armor_set.helmet.clone() {
-            if armor.priority > helmet.priority && self.is_this_armor_better(bot, helmet) {
-              armor_set.helmet = Some(armor);
+          if let Some(helmet) = &armor_set.helmet {
+            if armor.priority <= helmet.priority {
+              continue;
             }
-          } else {
+          }
+          
+          if self.is_this_armor_better(bot, &armor) {
             armor_set.helmet = Some(armor);
           }
         },
         "chestplate" => {
-          if let Some(chestplate) = armor_set.chestplate.clone() {
-            if armor.priority > chestplate.priority && self.is_this_armor_better(bot, chestplate) {
-              armor_set.chestplate = Some(armor);
+          if let Some(chestplate) = &armor_set.chestplate {
+            if armor.priority <= chestplate.priority {
+              continue;
             }
-          } else {
+          }
+          
+          if self.is_this_armor_better(bot, &armor) {
             armor_set.chestplate = Some(armor);
           }
         },
         "leggings" => {
-          if let Some(leggings) = armor_set.leggings.clone() {
-            if armor.priority > leggings.priority && self.is_this_armor_better(bot, leggings) {
-              armor_set.leggings = Some(armor);
+          if let Some(leggings) = &armor_set.leggings {
+            if armor.priority <= leggings.priority {
+              continue;
             }
-          } else {
+          }
+          
+          if self.is_this_armor_better(bot, &armor) {
             armor_set.leggings = Some(armor);
           }
         },
         "boots" => {
-          if let Some(boots) = armor_set.boots.clone() {
-            if armor.priority > boots.priority && self.is_this_armor_better(bot, boots) {
-              armor_set.boots = Some(armor);
+          if let Some(boots) = &armor_set.boots {
+            if armor.priority <= boots.priority {
+              continue;
             }
-          } else {
+          }
+          
+          if self.is_this_armor_better(bot, &armor) {
             armor_set.boots = Some(armor);
           }
         },
@@ -227,26 +230,22 @@ impl AutoArmorPlugin {
     armor_set
   }
 
-  fn is_this_armor_better(&self, bot: &Client, armor: Armor) -> bool {
-    let inventory = bot.get_inventory();
+  fn is_this_armor_better(&self, bot: &Client, armor: &Armor) -> bool {
+    let target_slot = match armor.part.as_str() {
+      "helmet" => 5,
+      "chestplate" => 6,
+      "leggings" => 7,
+      "boots" => 8,
+      _ => return false
+    };
 
-    if let Some(menu) = inventory.menu() {
-      let target_slot = match armor.part.as_str() {
-        "helmet" => 5,
-        "chestplate" => 6,
-        "leggings" => 7,
-        "boots" => 8,
-        _ => return false
-      };
-
-      if let Some(item) = menu.slot(target_slot) {
-        if let Some(current_armor) = self.is_armor(item, Some(target_slot)) {
-          if armor.part == current_armor.part {
-            return armor.priority > current_armor.priority;
-          }
-        } else {
-          return true;
+    if let Some(item) = bot.menu().slot(target_slot) {
+      if let Some(current_armor) = self.is_armor(item, target_slot) {
+        if armor.part == current_armor.part {
+          return armor.priority > current_armor.priority;
         }
+      } else {
+        return true;
       }
     }
 

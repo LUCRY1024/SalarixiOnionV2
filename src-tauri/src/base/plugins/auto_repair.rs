@@ -47,6 +47,9 @@ impl AutoRepairPlugin {
 
     for broken_item in broken_items {
       if !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
+        STATES.set_state(&nickname, "can_eating", false);
+        STATES.set_state(&nickname, "can_drinking", false);
+
         if broken_item.slot != 45 && broken_item.slot > 8 {
           take_item(bot, broken_item.slot).await;
           sleep(Duration::from_millis(50)).await;
@@ -55,6 +58,9 @@ impl AutoRepairPlugin {
         } 
 
         self.repair_item(bot, broken_item).await;
+
+        STATES.set_state(&nickname, "can_eating", true);
+        STATES.set_state(&nickname, "can_drinking", true);
       }
     }
   }
@@ -75,7 +81,10 @@ impl AutoRepairPlugin {
       let nickname = bot.username();
 
       for _ in 0..=count {
-        if !STATES.get_state(&nickname, "is_attacking") {
+        if STATES.get_state(&nickname, "can_interacting") && STATES.get_state(&nickname, "can_looking") {
+          STATES.set_mutual_states(&nickname, "interacting", true);
+          STATES.set_mutual_states(&nickname, "looking", true);
+
           let mut slot = 45;
 
           if broken_item.slot >= 5 && broken_item.slot <= 8 {
@@ -90,28 +99,23 @@ impl AutoRepairPlugin {
               let direction = bot.direction();
 
               if direction.1 < 84.0 {
-                if STATES.get_state(&nickname, "can_looking") {
-                  STATES.set_state(&nickname, "can_looking", false);
-                  STATES.set_state(&nickname, "is_looking", true);
-
-                  bot.set_direction(direction.0, randfloat(84.0, 90.0) as f32);
-                  sleep(Duration::from_millis(randuint(200, 250))).await;
-                  
-                  STATES.set_state(&nickname, "can_looking", true);
-                  STATES.set_state(&nickname, "is_looking", false);
-                } else {
-                  continue;
-                }
+                bot.set_direction(direction.0, randfloat(84.0, 90.0) as f32);
+                sleep(Duration::from_millis(randuint(150, 200))).await;
               } 
 
               start_use_item(bot, InteractionHand::MainHand);
 
-              sleep(Duration::from_millis(randuint(200, 300))).await;
+              sleep(Duration::from_millis(randuint(200, 250))).await;
             } else {
               return;
             }
           }
+
+          STATES.set_mutual_states(&nickname, "interacting", false);
+          STATES.set_mutual_states(&nickname, "looking", false);
         }
+
+        sleep(Duration::from_millis(50)).await;
       }
     }
   }

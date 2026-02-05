@@ -212,7 +212,7 @@ impl ScaffoldModule {
   } 
 
   pub fn stop(&self, bot: &Client) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("scaffold");
+    kill_task(&bot.username(), "scaffold");
     bot.set_crouching(false);
   }
 }

@@ -615,7 +615,7 @@ class ElementManager {
     document.getElementById('select-bow-aim-target')?.addEventListener('change', function (this: HTMLSelectElement) {
       const customGoalInputContainer = document.getElementById('bow-aim-custom-goal-input-container') as HTMLElement;
 
-      if (this.value === 'custom-goal') {
+      if (this.value === 'custom') {
         customGoalInputContainer.style.display = 'flex';
       } else {
         customGoalInputContainer.style.display = 'none';

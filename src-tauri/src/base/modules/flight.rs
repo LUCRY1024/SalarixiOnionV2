@@ -328,6 +328,6 @@ impl FlightModule {
   } 
 
   pub fn stop(&self, nickname: &String) {
-    TASKS.get(nickname).unwrap().write().unwrap().kill_task("flight");
+    kill_task(nickname, "flight");
   }
 }

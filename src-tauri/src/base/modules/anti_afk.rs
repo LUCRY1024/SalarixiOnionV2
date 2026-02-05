@@ -115,7 +115,7 @@ impl AntiAfkModule {
   } 
 
   pub fn stop(&self, bot: &Client) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("anti-afk");
+    kill_task(&bot.username(), "anti-afk");
     bot.walk(WalkDirection::None);
   }
 }

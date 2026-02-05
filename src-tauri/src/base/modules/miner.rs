@@ -275,9 +275,16 @@ impl MinerModule {
   } 
 
   pub fn stop(&self, bot: &Client) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("miner");
+    let nickname = bot.username();
+
+    kill_task(&nickname, "miner");
+
     bot.left_click_mine(false);
-    bot.walk(WalkDirection::None);
     bot.set_crouching(false);
+    bot.walk(WalkDirection::None);
+
+    STATES.set_mutual_states(&nickname, "interacting", false);
+    STATES.set_mutual_states(&nickname, "walking", false);
+    STATES.set_mutual_states(&nickname, "looking", false);
   }
 }

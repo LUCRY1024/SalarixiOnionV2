@@ -497,7 +497,7 @@ impl ModuleManager {
                 });
 
                 if options.mode.as_str() == "spamming" {
-                  TASKS.get(&nickname).unwrap().write().unwrap().run_task("spamming", task);
+                  run_task(&nickname, "spamming", task);
                 }
               } else {
                 if options.mode.as_str() == "spamming" {
@@ -522,7 +522,7 @@ impl ModuleManager {
                   }
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task(&options.action, task);
+                run_task(&nickname, &options.action, task);
               } else {
                 self.actions.stop(&bot, &options.action);
               }
@@ -531,7 +531,7 @@ impl ModuleManager {
               let options: InventoryOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
               tokio::spawn(async move {
-                self.inventory.action(&bot, options).await;
+                self.inventory.interact(&bot, options).await;
               });
             },
             "movement" => {
@@ -546,7 +546,7 @@ impl ModuleManager {
                   self.movement.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("movement", task);
+                run_task(&nickname, "movement", task);
               } else {
                 self.movement.stop(&bot);
               }
@@ -563,7 +563,7 @@ impl ModuleManager {
                   self.anti_afk.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("anti-afk", task);
+                run_task(&nickname, "anti-afk", task);
               } else {
                 self.anti_afk.stop(&bot);
               }
@@ -580,7 +580,7 @@ impl ModuleManager {
                   self.flight.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("flight", task);
+                run_task(&nickname, "flight", task);
               } else {
                 self.flight.stop(&nickname);
               }
@@ -597,7 +597,7 @@ impl ModuleManager {
                   self.killaura.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("killaura", task);
+                run_task(&nickname, "killaura", task);
               } else {
                 self.killaura.stop(&bot);
               }
@@ -614,7 +614,7 @@ impl ModuleManager {
                   self.scaffold.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("scaffold", task);
+                run_task(&nickname, "scaffold", task);
               } else {
                 self.scaffold.stop(&bot);
               }
@@ -631,7 +631,7 @@ impl ModuleManager {
                   self.anti_fall.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("anti-fall", task);
+                run_task(&nickname, "anti-fall", task);
               } else {
                 self.anti_fall.stop(&nickname);
               }
@@ -648,7 +648,7 @@ impl ModuleManager {
                   self.bow_aim.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("bow-aim", task);
+                run_task(&nickname, "bow-aim", task);
               } else {
                 self.bow_aim.stop(&bot);
               }
@@ -665,7 +665,7 @@ impl ModuleManager {
                   self.stealer.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("stealer", task);
+                run_task(&nickname, "stealer", task);
               } else {
                 self.stealer.stop(&bot);
               }
@@ -682,7 +682,7 @@ impl ModuleManager {
                   self.miner.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("miner", task);
+                run_task(&nickname, "miner", task);
               } else {
                 self.miner.stop(&bot);
               }
@@ -699,7 +699,7 @@ impl ModuleManager {
                   self.farmer.enable(&bot, options_task).await;
                 });
 
-                TASKS.get(&nickname).unwrap().write().unwrap().run_task("farmer", task);
+                run_task(&nickname, "farmer", task);
               } else {
                 self.farmer.stop(&nickname);
               }

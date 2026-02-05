@@ -1,15 +1,12 @@
 use azalea::prelude::*;
 use azalea::WalkDirection;
-use azalea::pathfinder::goals::XZGoal;  
-use azalea::pathfinder::PathfinderOpts;
-use azalea::pathfinder::astar::PathfinderTimeout;
-use azalea::pathfinder::moves;
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
 use crate::tools::*;
+use crate::common::{go, go_to};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,10 +39,10 @@ impl MovementModule {
 
             loop {
               match options.direction.as_str() {
-                "forward" => { bot.walk(WalkDirection::Forward); },
-                "backward" => { bot.walk(WalkDirection::Backward); },
-                "left" => { bot.walk(WalkDirection::Left); },
-                "right" => { bot.walk(WalkDirection::Right); },
+                "forward" => { go(bot, WalkDirection::Forward); },
+                "backward" => { go(bot, WalkDirection::Backward); },
+                "left" => { go(bot, WalkDirection::Left); },
+                "right" => { go(bot, WalkDirection::Right); },
                 _ => {}
               }
 
@@ -56,6 +53,8 @@ impl MovementModule {
               }
 
               bot.walk(WalkDirection::None);
+
+              STATES.set_mutual_states(&bot.username(), "walking", false);
             }
           },
           false => {
@@ -64,10 +63,10 @@ impl MovementModule {
             }
 
             match options.direction.as_str() {
-              "forward" => { bot.walk(WalkDirection::Forward); },
-              "backward" => { bot.walk(WalkDirection::Backward); },
-              "left" => { bot.walk(WalkDirection::Left); },
-              "right" => { bot.walk(WalkDirection::Right); },
+              "forward" => { go(bot, WalkDirection::Forward); },
+              "backward" => { go(bot, WalkDirection::Backward); },
+              "left" => { go(bot, WalkDirection::Left); },
+              "right" => { go(bot, WalkDirection::Right); },
               _ => {}
             }
           }
@@ -80,14 +79,7 @@ impl MovementModule {
               sleep(Duration::from_millis(randuint(500, 2000))).await;
             }
 
-            bot.start_goto_with_opts(
-              XZGoal { x: x, z: z },  
-              PathfinderOpts::new()  
-                .min_timeout(PathfinderTimeout::Time(Duration::from_millis(300)))  
-                .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
-                .allow_mining(false)  
-                .successors_fn(moves::basic::basic_move)  
-            );
+            go_to(bot.clone(), x, z);
           }
         }
       },
@@ -96,8 +88,14 @@ impl MovementModule {
   } 
 
   pub fn stop(&self, bot: &Client) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("movement");
+    let nickname = bot.username();
+
+    kill_task(&nickname, "movement");
+
     bot.walk(WalkDirection::None);
     bot.stop_pathfinding();
+
+    STATES.set_mutual_states(&nickname, "walking", false);
+    STATES.set_mutual_states(&nickname, "sprinting", false);
   }
 }

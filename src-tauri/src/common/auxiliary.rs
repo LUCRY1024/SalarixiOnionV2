@@ -2,19 +2,26 @@ use azalea::SprintDirection;
 use azalea::WalkDirection;
 use azalea::container::ContainerHandleRef;
 use azalea::core::direction::Direction;
-use azalea::entity::Position;
+use azalea::entity::LocalEntity;
+use azalea::entity::metadata::AbstractAnimal;
+use azalea::entity::{Physics, Dead, Position};
 use azalea::entity::inventory::Inventory;
+use azalea::entity::metadata::{Player, AbstractMonster};
+use azalea::pathfinder::PathfinderOpts;
+use azalea::pathfinder::astar::PathfinderTimeout;
+use azalea::pathfinder::goals::XZGoal;
+use azalea::pathfinder::moves::basic::basic_move;
+use azalea::player::GameProfileComponent;
 use azalea::prelude::*;
+use azalea::ecs::prelude::*;
 use azalea::Vec3;
 use azalea::core::position::BlockPos; 
-use azalea::entity::Physics;
 use azalea::block::BlockState;
-use azalea::protocol::packets::game::ServerboundSwing;
-use azalea::protocol::packets::game::ServerboundUseItem;
+use azalea::protocol::packets::game::{ServerboundSwing, ServerboundUseItem, ServerboundPlayerAction};
 use azalea::protocol::packets::game::s_interact::InteractionHand;
-use azalea::protocol::packets::game::ServerboundPlayerAction;
 use azalea::protocol::packets::game::s_player_action::Action;
 use azalea::registry::builtin::ItemKind;
+use azalea::world::MinecraftEntityId;
 use bevy_ecs::entity::Entity;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -322,6 +329,30 @@ pub fn run(bot: &Client, direction: SprintDirection) {
   }
 }
 
+// Функция безопасного задания координат по X и Z для бота
+pub fn go_to(bot: Client, x: i32, z: i32) {
+  let nickname = bot.username();
+  
+  if STATES.get_state(&nickname, "can_walking") && STATES.get_state(&nickname, "can_sprinting") {
+    tokio::spawn(async move {
+      STATES.set_mutual_states(&nickname, "sprinting", true);
+      STATES.set_mutual_states(&nickname, "walking", true);
+
+      let goal = XZGoal { x: x, z: z };
+      let opts = PathfinderOpts::new()  
+        .min_timeout(PathfinderTimeout::Time(Duration::from_millis(500)))  
+        .max_timeout(PathfinderTimeout::Time(Duration::from_millis(1000)))  
+        .allow_mining(false)  
+        .successors_fn(basic_move);
+      
+      bot.goto_with_opts(goal, opts).await;
+
+      STATES.set_mutual_states(&nickname, "sprinting", false);
+      STATES.set_mutual_states(&nickname, "walking", false);
+    });
+  }
+}
+
 // Функция отправки пакета SwingArm
 pub fn swing_arm(bot: &Client) {
   bot.write_packet(ServerboundSwing {
@@ -465,4 +496,67 @@ pub fn this_is_solid_block(kind: ItemKind) -> bool {
   }
 
   false
+}
+
+// Структура EntityFilter
+pub struct EntityFilter {
+  target: String,
+  distance: f64,
+  excluded_name: String,
+  excluded_id: MinecraftEntityId
+}
+
+impl EntityFilter {
+  pub fn new(bot: &Client, target: &str, distance: f64) -> Self {
+    let entity_id = if let Some(id) = bot.get_entity_component::<MinecraftEntityId>(bot.entity) {
+      id
+    } else {
+      MinecraftEntityId::default()
+    };
+
+    Self {
+      target: target.to_string(),
+      distance: distance,
+      excluded_name: bot.username(),
+      excluded_id: entity_id
+    }
+  }
+}
+
+// Функция получения ближайшей сущности
+pub fn get_nearest_entity(bot: &Client, filter: EntityFilter) -> Option<Entity> {
+  let eye_pos = bot.eye_position();
+
+  match filter.target.as_str() {
+    "player" => {
+      return bot.nearest_entity_by::<(&GameProfileComponent, &Position, &MinecraftEntityId), (With<Player>, Without<LocalEntity>, Without<Dead>)>(|data: (&GameProfileComponent, &Position, &MinecraftEntityId)| {
+        *data.0.0.name != filter.excluded_name && eye_pos.distance_to(**data.1) <= filter.distance && *data.2 != filter.excluded_id
+      });
+    },
+    "monster" => {
+      return bot.nearest_entity_by::<(&Position, &MinecraftEntityId), (With<AbstractMonster>, Without<LocalEntity>, Without<Dead>)>(|data: (&Position, &MinecraftEntityId)| {
+        eye_pos.distance_to(**data.0) <= filter.distance && *data.1 != filter.excluded_id
+      });
+    },
+    "animal" => {
+      return bot.nearest_entity_by::<(&Position, &MinecraftEntityId), (With<AbstractAnimal>, Without<LocalEntity>, Without<Dead>)>(|data: (&Position, &MinecraftEntityId)| {
+        eye_pos.distance_to(**data.0) <= filter.distance && *data.1 != filter.excluded_id
+      });
+    },
+    "danger" => {
+      return bot.nearest_entity_by::<(&Position, &MinecraftEntityId), (With<Player>, With<AbstractMonster>, Without<LocalEntity>, Without<Dead>)>(|data: (&Position, &MinecraftEntityId)| {
+        eye_pos.distance_to(**data.0) <= filter.distance && *data.1 != filter.excluded_id
+      });
+    },
+    "any" => {
+      return bot.nearest_entity_by::<(&Position, &MinecraftEntityId), (Without<LocalEntity>, Without<Dead>)>(|data: (&Position, &MinecraftEntityId)| {
+        eye_pos.distance_to(**data.0) <= filter.distance && *data.1 != filter.excluded_id
+      });
+    },
+    _ => {
+      return bot.nearest_entity_by::<(&GameProfileComponent, &Position, &MinecraftEntityId), (With<Player>, Without<LocalEntity>, Without<Dead>)>(|data: (&GameProfileComponent, &Position, &MinecraftEntityId)| {
+        data.0.0.name == filter.target && eye_pos.distance_to(**data.1) <= filter.distance && *data.2 != filter.excluded_id
+      });
+    }
+  }
 }

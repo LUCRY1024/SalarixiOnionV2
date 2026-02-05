@@ -1,12 +1,15 @@
+use std::time::Duration;
+
 use azalea::prelude::*;
 use azalea::Vec3;
 use azalea::core::position::BlockPos;
 use azalea::container::ContainerHandle;
 use serde::{Serialize, Deserialize};
+use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::get_block_state;
 use crate::tools::*;
+use crate::common::get_block_state;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,7 +19,7 @@ pub struct StealerModule;
 pub struct StealerOptions {
   pub target: String,
   pub radius: Option<i32>,
-  pub delay: Option<usize>,
+  pub delay: Option<u64>,
   pub state: bool
 }
 
@@ -88,27 +91,28 @@ impl StealerModule {
       let position = bot.position();  
       let direction = bot.direction();
 
-      let target_positions = self.find_nearest_targets(bot, position.clone(), &options.target, if let Some(radius) = options.radius { radius } else { 4 });
+      let target_positions = self.find_nearest_targets(bot, position, &options.target, if let Some(radius) = options.radius { radius } else { 4 });
         
       for pos in target_positions {  
         bot.look_at(pos.center());  
 
-        bot.wait_ticks(randticks(1, 2)).await;
+        sleep(Duration::from_millis(randuint(50, 100))).await;
             
         if let Some(container) = bot.open_container_at(pos).await {  
           self.extract_all_items(&container).await;  
-          bot.wait_ticks(randticks(4, 6)).await;
+          container.close();
+          sleep(Duration::from_millis(randuint(200, 300))).await;
         }  
       } 
 
-      bot.set_direction(direction.0, direction.1);
+      bot.set_direction(direction.0 + randfloat(-2.5, 2.5) as f32, direction.1 + randfloat(-2.5, 2.5) as f32);
 
-      bot.wait_ticks(options.delay.unwrap_or(20)).await;
+      sleep(Duration::from_millis(options.delay.unwrap_or(1000))).await;
     }
   } 
 
   pub fn stop(&self, bot: &Client) {
-    TASKS.get(&bot.username()).unwrap().write().unwrap().kill_task("stealer");
+    kill_task(&bot.username(), "stealer");
     bot.get_inventory().close();
   }
 }

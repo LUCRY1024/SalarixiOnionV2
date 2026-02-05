@@ -190,6 +190,6 @@ impl AntiFallModule {
   }
 
   pub fn stop(&self, nickname: &String) {
-    TASKS.get(nickname).unwrap().write().unwrap().kill_task("anti-fall");
+    kill_task(nickname, "anti-fall");
   }
 }
