@@ -37,6 +37,7 @@ interface BotProfile {
   registered: boolean;
   skin_is_set: boolean;
   captcha_caught: boolean;
+  group: string;
 }
 
 export class MonitoringManager {
@@ -51,6 +52,9 @@ export class MonitoringManager {
   private chatHistoryFilters: Record<string, string> = {};
 
   private listeners: Map<string, any> = new Map();
+
+  private activeMapRenderings: Map<string, boolean> = new Map();
+  private mapBase64Codes: Map<string, string> = new Map();
 
   public extendedMonitoring: boolean = true;
   public chatMonitoring: boolean = true;
@@ -311,13 +315,19 @@ export class MonitoringManager {
                   <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">
                     <p class="signature">${nickname}:</p>
 
-                    <input type="text" control="this" id="this-chat-message-${nickname}" placeholder="Сообщение" style="height: 28px; width: 250px;">
+                    <input type="text" class="glass-input" control="this" id="this-chat-message-${nickname}" placeholder="Сообщение" style="height: 28px; width: 250px;">
                   </div>
                 </div>
 
                 <div class="cover" id="map-${nickname}">
                   <div class="panel">
                     <div class="right">
+                      <button class="btn min pretty" id="remove-map-${nickname}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                          <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+                        </svg>
+                      </button>
+
                       <button class="btn min pretty" id="close-map-${nickname}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
                           <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
@@ -329,6 +339,12 @@ export class MonitoringManager {
                   <div class="bot-map-wrap" id="map-wrap-${nickname}">
                     <div class="bot-map-render-status" id="map-render-status-${nickname}">Генерация карты, пожайлуста, подождите...</div>
                     <div class="bot-map-render-progress" id="map-render-progress-${nickname}">Прогресс (блоков): <span class="bot-map-render-progress-count" id="map-render-progress-count-${nickname}">0</span> / 65536</div>
+
+                    <div id="save-map-wrap-${nickname}" style="display: none; margin-top: 30px; gap: 15px;">
+                      <input type="text" class="glass-input" id="save-map-path-${nickname}" placeholder="/home/User/MinecraftMaps/" style="height: 28px; width: 250px;">
+                      
+                      <button class="btn min" id="save-map-${nickname}">Сохранить</button>
+                    </div>  
                   </div>
                 </div>
               `;
@@ -431,29 +447,64 @@ export class MonitoringManager {
       (map as HTMLElement).style.display = 'flex';
 
       try {
-        const old_map = document.getElementById(`map-image-${nickname}`);
+        if (!document.getElementById(`map-image-${nickname}`) && !this.activeMapRenderings.get(nickname)) {
+          this.activeMapRenderings.set(nickname, true);
 
-        if (old_map) {
-          old_map.remove();
+          const old_map = document.getElementById(`map-image-${nickname}`);
+
+          if (old_map) {
+            old_map.remove();
+          }
+
+          (document.getElementById(`map-render-status-${nickname}`) as HTMLElement).style.display = 'flex';
+          (document.getElementById(`map-render-progress-${nickname}`) as HTMLElement).style.display = 'flex';
+          
+          const base64_code = await invoke('render_map', { nickname: nickname }) as string;
+
+          this.mapBase64Codes.set(nickname, base64_code);
+
+          (document.getElementById(`map-render-status-${nickname}`) as HTMLElement).style.display = 'none';
+          (document.getElementById(`map-render-progress-${nickname}`) as HTMLElement).style.display = 'none';
+
+          this.activeMapRenderings.delete(nickname);
+
+          const img = document.createElement('img');
+          img.className = 'bot-map-image';
+          img.id = `map-image-${nickname}`;
+          img.src = `data:image/png;base64,${base64_code}`;
+          img.draggable = false;
+
+          const wrap = document.getElementById(`map-wrap-${nickname}`);
+
+          wrap?.insertBefore(img, wrap.firstChild);
+
+          (document.getElementById(`save-map-wrap-${nickname}`) as HTMLElement).style.display = 'flex';
         }
-
-        (document.getElementById(`map-render-status-${nickname}`) as HTMLElement).style.display = 'flex';
-        (document.getElementById(`map-render-progress-${nickname}`) as HTMLElement).style.display = 'flex';
-        
-        const base64_code = await invoke('render_map', { nickname: nickname }) as string;
-
-        (document.getElementById(`map-render-status-${nickname}`) as HTMLElement).style.display = 'none';
-        (document.getElementById(`map-render-progress-${nickname}`) as HTMLElement).style.display = 'none';
-
-        const img = document.createElement('img');
-        img.className = 'bot-map-image';
-        img.id = `map-image-${nickname}`;
-        img.src = `data:image/png;base64,${base64_code}`;
-        img.draggable = false;
-
-        document.getElementById(`map-wrap-${nickname}`)?.appendChild(img);
       } catch (error) {
         log(`Ошибка мониторинга (render-map): ${error}`, 'error');
+      }
+    });
+
+    this.addListener(`remove-map-${nickname}`, 'click', async () => {
+      this.mapBase64Codes.delete(nickname);
+      document.getElementById(`map-image-${nickname}`)?.remove();
+      (document.getElementById(`save-map-wrap-${nickname}`) as HTMLElement).style.display = 'none';
+    });
+
+    this.addListener(`save-map-${nickname}`, 'click', async () => {
+      try {
+        const base64code = this.mapBase64Codes.get(nickname);
+
+        if (base64code) {
+          const path = document.getElementById(`save-map-path-${nickname}`) as HTMLInputElement;
+          await invoke('save_map', { 
+            nickname: nickname, 
+            path: path.value, 
+            base64code: base64code 
+          });
+        }
+      } catch (error) {
+        log(`Ошибка мониторинга (save-map): ${error}`, 'error');
       }
     });
 
@@ -558,7 +609,7 @@ export class MonitoringManager {
           <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px;">
             <p class="signature">${nickname}:</p>
 
-            <input type="text" id="send-captcha-code-${nickname}" placeholder="Введите код" style="height: 28px; width: 250px;">
+            <input type="text" class="glass-input" id="send-captcha-code-${nickname}" placeholder="Введите код" style="height: 28px; width: 250px;">
           </div>
         `;
 

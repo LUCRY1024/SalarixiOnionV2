@@ -200,6 +200,12 @@ async fn render_map(nickname: String) -> Option<String> {
   None
 }
 
+// Функция сохранения карты
+#[tauri::command]
+async fn save_map(nickname: String, path: Option<String>, base64code: String) {
+  MAP_RENDERER.save_map(nickname, path, base64code);
+}
+
 // Функция открытия URL в браузере
 #[tauri::command]
 fn open_url(url: String) {
@@ -225,7 +231,7 @@ pub fn run() {
       send_message, reset_bot, disconnect_bot,
       get_radar_data, save_radar_data, set_group,
       get_active_bots_count, get_memory_usage,
-      control, quick_task, render_map, open_url
+      control, quick_task, render_map, save_map, open_url
     ])
     .run(tauri::generate_context!())
     .expect("Не удалось запустить клиент");

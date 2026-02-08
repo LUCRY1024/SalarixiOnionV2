@@ -8,6 +8,8 @@ use azalea::protocol::connect::Proxy;
 use azalea_viaversion::ViaVersionPlugin;
 use std::collections::HashMap;
 use std::net::SocketAddr;  
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::time::Duration;  
 use std::thread;
 use once_cell::sync::Lazy;
@@ -24,9 +26,16 @@ use crate::emit::*;
 use crate::webhook::send_webhook;
 
 
+pub static ACTIVE: AtomicBool = AtomicBool::new(false);
+
 pub static FLOW_MANAGER: Lazy<Arc<RwLock<Option<Arc<RwLock<FlowManager>>>>>> = Lazy::new(|| { Arc::new(RwLock::new(None)) });
 pub static MODULE_MANAGER: Lazy<Arc<ModuleManager>> = Lazy::new(|| { Arc::new(ModuleManager::new()) });
 pub static PLUGIN_MANAGER: Lazy<Arc<PluginManager>> = Lazy::new(|| { Arc::new(PluginManager::new()) });
+
+// Функция получения активности
+pub fn get_active() -> bool {
+  ACTIVE.load(Ordering::SeqCst)
+}
 
 // Функция инициализации FlowManager
 pub fn init_flow_manager(manager: FlowManager) {
@@ -240,6 +249,7 @@ impl FlowManager {
     STATES.clear();
     TASKS.clear();
 
+    ACTIVE.store(true, Ordering::SeqCst);
     self.active = true;
 
     if options.use_webhook {
@@ -373,6 +383,7 @@ impl FlowManager {
       swarm.ecs_lock.lock().write_message(AppExit::Success);
     }
 
+    ACTIVE.store(false, Ordering::SeqCst);
     self.active = false;
     self.swarm.take();
     self.bots.clear();
