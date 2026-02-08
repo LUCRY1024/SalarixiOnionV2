@@ -34,7 +34,7 @@ pub static PLUGIN_MANAGER: Lazy<Arc<PluginManager>> = Lazy::new(|| { Arc::new(Pl
 
 // Функция получения активности
 pub fn get_active() -> bool {
-  ACTIVE.load(Ordering::SeqCst)
+  ACTIVE.load(Ordering::Relaxed)
 }
 
 // Функция инициализации FlowManager
@@ -383,7 +383,7 @@ impl FlowManager {
       swarm.ecs_lock.lock().write_message(AppExit::Success);
     }
 
-    ACTIVE.store(false, Ordering::SeqCst);
+    ACTIVE.store(false, Ordering::Relaxed);
     self.active = false;
     self.swarm.take();
     self.bots.clear();
@@ -416,6 +416,8 @@ impl FlowManager {
       if *name == *nickname {
         TASKS.reset(nickname);
         STATES.reset(nickname);
+
+        emit_message("Система", format!("Все задачи и состояния бота {} сброшены", nickname));
         return Some(format!("Все задачи и состояния бота {} сброшены", nickname));
       }
     }
@@ -427,6 +429,7 @@ impl FlowManager {
     for (name, bot) in self.bots.iter() {
       if *name == *nickname {
         bot.disconnect();
+        emit_message("Система", format!("Бот {} отключился", nickname));
         return Some(format!("Бот {} отключился", nickname));
       }
     }
@@ -668,7 +671,7 @@ impl ModuleManager {
 
               let options_task = options.clone();  
 
-              self.stealer.stop(&bot);
+              self.stealer.stop(&nickname);
 
               if options.state {
                 let task = tokio::spawn(async move {
@@ -677,7 +680,7 @@ impl ModuleManager {
 
                 run_task(&nickname, "stealer", task);
               } else {
-                self.stealer.stop(&bot);
+                self.stealer.stop(&nickname);
               }
             },
             "miner" => {

@@ -7,7 +7,7 @@ use tokio::time::sleep;
 use crate::base::*;
 use crate::common::get_inventory_menu;
 use crate::tools::*;
-use crate::common::{EntityFilter, get_entity_position, get_nearest_entity, move_item, release_use_item, start_use_item};
+use crate::common::{EntityFilter, get_entity_position, get_nearest_entity, inventory_move_item, release_use_item, start_use_item};
 
 
 pub struct AutoShieldPlugin;
@@ -49,7 +49,7 @@ impl AutoShieldPlugin {
               for (slot, item) in menu.slots().iter().enumerate() {  
                 if slot != 45 {
                   if item.kind() == ItemKind::Shield {
-                    move_item(bot, ItemKind::Shield, slot, 45).await;
+                    inventory_move_item(bot, ItemKind::Shield, slot, 45).await;
                     shield_equipped = true;
                     sleep(Duration::from_millis(50)).await;
 

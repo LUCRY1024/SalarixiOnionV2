@@ -348,8 +348,6 @@ class ElementManager {
       }
     })); 
 
-    await this.initPluginDescriptions();
-
     document.querySelectorAll('[control-toggler="true"]').forEach(e => e.addEventListener('click', async () => { 
       let state: boolean | string = false;
       let attribute = e.getAttribute('state');
@@ -741,6 +739,8 @@ class ElementManager {
     this.setInterfacePanelFontSize((document.getElementById('interface-panel-font-size') as HTMLSelectElement).value);
     this.setInterfacePanelInternalGap((document.getElementById('interface-panel-internal-gap') as HTMLSelectElement).value);
     await translate((document.getElementById('interface-client-language') as HTMLSelectElement).value as Language);
+
+    await this.initPluginDescriptions();
   } 
 
   private setInterfaceTheme(theme: string): void {

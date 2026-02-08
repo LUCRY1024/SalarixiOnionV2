@@ -8,7 +8,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::get_inventory_menu;
+use crate::common::{get_health, get_inventory_menu, get_satiety};
 use crate::tools::*;
 use crate::common::{take_item, start_use_item};
 
@@ -71,6 +71,7 @@ impl AutoEatPlugin {
 
             if should_eat {
               STATES.set_state(&nickname, "can_drinking", false);
+              STATES.set_state(&nickname, "can_interacting", false);
               STATES.set_mutual_states(&nickname, "eating", true);
 
               take_item(bot, food_slot).await;
@@ -79,6 +80,7 @@ impl AutoEatPlugin {
               sleep(Duration::from_millis(50)).await;
 
               STATES.set_state(&nickname, "can_drinking", true);
+              STATES.set_state(&nickname, "can_interacting", true);
               STATES.set_state(&nickname, "can_walking", true);
               STATES.set_state(&nickname, "can_sprinting", true);
               STATES.set_mutual_states(&nickname, "eating", false);
@@ -97,81 +99,75 @@ impl AutoEatPlugin {
   }
 
   fn get_best_food(&self, bot: &Client, food_list: Vec<Food>) -> Option<Food> {
-    if let Some(health_component) = bot.get_component::<Health>() {
-      if let Some(hunger_component) = bot.get_component::<Hunger>() {
-        let health = health_component.0;
-        let hunger = hunger_component.food;
+    let health = get_health(bot);
+    let satiety = get_satiety(bot);
 
-        let mut best_food = None;
+    let mut best_food = None;
 
-        if food_list.len() > 1 {
-          if hunger == 20 && health < 12.0 {
-            for food in &food_list {
-              if food.priority == 3 {
-                best_food = Some(food.clone());
-                break;
-              }
-            }
+    if food_list.len() > 1 {
+      if satiety == 20 && health < 12 {
+        for food in &food_list {
+          if food.priority == 3 {
+            best_food = Some(food.clone());
+            break;
           }
+        }
+      }
 
-          if best_food.is_none() {
-            let desired_health_priority;
-            let desired_hunger_priority;
+      if best_food.is_none() {
+        let desired_health_priority;
+        let desired_satiety_priority;
 
-            if health < 20.0 && health >= 18.0 {
-              desired_health_priority = 0;
-            } else if health < 18.0 && health >= 15.0 {
-              desired_health_priority = 1;
-            } else if health < 15.0 && health >= 12.0 {
-              desired_health_priority = 2;
-            } else {
-              desired_health_priority = 3;
-            }
-
-            if hunger < 20 && hunger >= 18 {
-              desired_hunger_priority = 0;
-            } else if hunger < 18 && hunger >= 15 {
-              desired_hunger_priority = 1;
-            } else if hunger < 15 && hunger >= 12 {
-              desired_hunger_priority = 2;
-            } else {
-              desired_hunger_priority = 3;
-            }
-
-            let mut current_priority;
-
-            if desired_health_priority > desired_hunger_priority {
-              current_priority = desired_health_priority;
-            } else {
-              current_priority = (desired_health_priority + desired_hunger_priority) / 2;
-            }
-
-            for attempt in 0..3 {
-              for food in &food_list {
-                if food.priority == current_priority {
-                  best_food = Some(food.clone());
-                  break;
-                }
-              }
-
-              if attempt > 0 {
-                if current_priority + 1 <= 3 {
-                  current_priority += 1;
-                } else {
-                  current_priority -= 1;
-                }
-              }
-            }
-          }
+        if health < 20 && health >= 18 {
+          desired_health_priority = 0;
+        } else if health < 18 && health >= 15 {
+          desired_health_priority = 1;
+        } else if health < 15 && health >= 12 {
+          desired_health_priority = 2;
         } else {
-          best_food = food_list.get(0).cloned();
+          desired_health_priority = 3;
         }
 
-        return best_food;
+        if satiety < 20 && satiety >= 18 {
+          desired_satiety_priority = 0;
+        } else if satiety < 18 && satiety >= 15 {
+          desired_satiety_priority = 1;
+        } else if satiety < 15 && satiety >= 12 {
+          desired_satiety_priority = 2;
+        } else {
+          desired_satiety_priority = 3;
+        }
+
+        let mut current_priority;
+
+        if desired_health_priority > desired_satiety_priority {
+          current_priority = desired_health_priority;
+        } else {
+          current_priority = (desired_health_priority + desired_satiety_priority) / 2;
+        }
+
+        for attempt in 0..3 {
+          for food in &food_list {
+            if food.priority == current_priority {
+              best_food = Some(food.clone());
+              break;
+            }
+          }
+
+          if attempt > 0 {
+            if current_priority + 1 <= 3 {
+              current_priority += 1;
+            } else {
+              current_priority -= 1;
+            }
+          }
+        }
       }
+    } else {
+      best_food = food_list.get(0).cloned();
     }
 
-    None
+    best_food
   }
 
   fn find_food_in_inventory(&self, bot: &Client) -> Vec<Food> {

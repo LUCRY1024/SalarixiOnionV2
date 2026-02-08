@@ -100,7 +100,7 @@ impl FlightModule {
 
       set_bot_velocity_y(bot, 0.0);
 
-      bot.wait_ticks(1).await;
+      sleep(Duration::from_millis(50)).await;
     }
   }
 
@@ -128,7 +128,7 @@ impl FlightModule {
       if config.use_jitter {
         for _ in 0..randint(4, 6) {
           set_bot_velocity_y(bot, randfloat(config.min_change_y, config.max_change_y));
-          bot.wait_ticks(1).await;
+          sleep(Duration::from_millis(50)).await;
         }
       } else {
         set_bot_velocity_y(bot, randfloat(config.min_change_y, config.max_change_y));
@@ -244,7 +244,7 @@ impl FlightModule {
         if config.use_jitter {
           for _ in 0..randint(4, 6) {
             bot.write_packet(packet.clone());
-            bot.wait_ticks(1).await;
+            sleep(Duration::from_millis(50)).await;
           }
         } else {
           bot.write_packet(packet);
@@ -276,8 +276,6 @@ impl FlightModule {
     };
 
     loop {
-      sleep(Duration::from_millis(randuint(100, 200))).await;
-
       if config.use_ground_spoof {
         set_bot_on_ground(bot, true);
       }
@@ -303,7 +301,7 @@ impl FlightModule {
       if config.use_jitter {
         for _ in 0..randint(4, 6) {
           set_bot_velocity_y(bot, direction.y.abs() * final_strength * 0.2);
-          bot.wait_ticks(1).await;
+          sleep(Duration::from_millis(50)).await;
         }
       } else {
         set_bot_velocity_y(bot, direction.y.abs() * final_strength * 0.2);

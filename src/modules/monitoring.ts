@@ -5,26 +5,6 @@ import { log } from '../logger';
 import { date } from '../helpers/date';
 
 
-interface ChatEventPayload {
-  receiver: string;
-  message: string;
-}
-
-interface MapRenderProgressEventPayload {
-  nickname: string;
-  progress: number;
-}
-
-interface AntiWebCaptchaEventPayload {
-  captcha_url: string;
-  nickname: string;
-}
-
-interface AntiMapCaptchaEventPayload {
-  base64_code: string;
-  nickname: string;
-}
-
 interface BotProfile {
   status: string;
   nickname: string;
@@ -59,7 +39,7 @@ export class MonitoringManager {
   public extendedMonitoring: boolean = true;
   public chatMonitoring: boolean = true;
   public mapMonitoring: boolean = false;
-  public maxChatHistoryLength: number | null = null;
+  public maxChatHistoryLength: number = 0;
   public antiCaptchaType: string | null = null;
 
   public async init(): Promise<void> {
@@ -70,10 +50,10 @@ export class MonitoringManager {
     this.statusText!.style.color = '#646464f7';
     this.statusText!.style.display = 'flex';
 
-    await listen('chat', (event) => {
+    await listen('chat-message', (event) => {
       if (this.chatMonitoring) {
         try {
-          const payload = event.payload as ChatEventPayload;
+          const payload = event.payload as { receiver: string; message: string; };
           const receiver = payload.receiver;
           const message = payload.message;
 
@@ -109,13 +89,13 @@ export class MonitoringManager {
           } else {
             this.chatMessageCounter[receiver] = this.chatMessageCounter[receiver] + 1;
 
-            if (this.chatMessageCounter[receiver] > this.maxChatHistoryLength!) {
+            if (this.chatMessageCounter[receiver] > this.maxChatHistoryLength) {
               this.chatMessageCounter[receiver] = this.chatMessageCounter[receiver] - 1;
               chat.firstChild?.remove();
             }
           }
         } catch (error) {
-          log(`Ошибка мониторинга (receive-chat-payload): ${error}`, 'error');
+          log(`Ошибка мониторинга (receive-payload): ${error}`, 'error');
         }
       }
     });
@@ -123,7 +103,7 @@ export class MonitoringManager {
     await listen('map-render-progress', (event) => {
       if (this.mapMonitoring) {
         try {
-          const payload = event.payload as MapRenderProgressEventPayload;
+          const payload = event.payload as { nickname: string; progress: number; };
           const nickname = payload.nickname;
           const progress = payload.progress;
 
@@ -133,26 +113,26 @@ export class MonitoringManager {
             doc.innerText = progress.toString();
           }
         } catch (error) {
-          log(`Ошибка мониторинга (receive-map-render-progress-payload): ${error}`, 'error');
+          log(`Ошибка мониторинга (receive-payload): ${error}`, 'error');
         }
       }
     });
 
     await listen('anti-web-captcha', (event) => {
       try {
-        const payload = event.payload as AntiWebCaptchaEventPayload;
+        const payload = event.payload as { captcha_url: string; nickname: string; };
         const captcha_url = payload.captcha_url;
         const nickname = payload.nickname;
 
         document.getElementById(`solve-captcha-${nickname}`)?.setAttribute('captcha-url', captcha_url);
       } catch (error) {
-        log(`Ошибка мониторинга (receive-anti-web-captcha-payload): ${error}`, 'error');
+        log(`Ошибка мониторинга (receive-payload): ${error}`, 'error');
       }
     });
 
     await listen('anti-map-captcha', (event) => {
       try {
-        const payload = event.payload as AntiMapCaptchaEventPayload;
+        const payload = event.payload as { base64_code: string; nickname: string; };
         const base64_code = payload.base64_code;
         const nickname = payload.nickname;
 
@@ -163,7 +143,7 @@ export class MonitoringManager {
 
         document.getElementById(`map-captcha-image-container-${nickname}`)?.appendChild(img);
       } catch (error) {
-        log(`Ошибка мониторинга (receive-anti-map-captcha-payload): ${error}`, 'error');
+        log(`Ошибка мониторинга (receive-payload): ${error}`, 'error');
       }
     });
   }
@@ -179,8 +159,6 @@ export class MonitoringManager {
   public enable(delay: number): void {
     try {
       this.active = true;
-
-      const steveIconPath = document.getElementById('steve-img') as HTMLImageElement;
 
       let isFirst = true;
 
@@ -215,146 +193,9 @@ export class MonitoringManager {
             }
 
             if (this.usernameList.includes(nickname)) {
-              const status = document.getElementById(`bot-status-${nickname}`) as HTMLElement;
-              const proxy = document.getElementById(`bot-proxy-${nickname}`) as HTMLElement;
-              const ping = document.getElementById(`bot-ping-${nickname}`) as HTMLElement;
-              const health = document.getElementById(`bot-health-${nickname}`) as HTMLElement;
-              const satiety = document.getElementById(`bot-satiety-${nickname}`) as HTMLElement;
-
-              if (health.innerText.split('/')[0].replace(' ', '') != profile.health.toString() || satiety.innerText.split('/')[0].replace(' ', '') != profile.satiety.toString()) {
-                const card = document.getElementById(`bot-card-${nickname}`);
-                
-                card?.classList.add('glow');
-
-                setTimeout(() => {
-                  card?.classList.remove('glow');
-                }, 300);
-              }
-
-              status.innerHTML = `<span style="color: ${statusColor};">• ${profile.status}</span>`;
-              proxy.innerText = profile.proxy;
-              ping.innerText = `${profile.ping} мс`
-              health.innerText = `${profile.health} / 20`;
-              satiety.innerText = `${profile.satiety} / 20`;
+              this.updateBotCard(nickname, profile, statusColor)
             } else {
-              const card = document.createElement('div');
-              card.className = 'bot-card';
-              card.id = `bot-card-${nickname}`;
-
-              card.innerHTML = `
-                <div class="bot-card-head">
-                  <img src="${steveIconPath.src}" class="image" draggable="false">
-                  <div class="text">
-                    <div>
-                      <div class="bot-nickname" style="user-select: text; -moz-user-select: text;">${nickname}</div>
-                      <div class="bot-status"><span id="bot-status-${nickname}" style="color: ${statusColor};">• ${profile.status}</span></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="bot-advanced-info">
-                  <p>Версия:<span class="value" id="bot-version-${nickname}">${profile.version}</span></p>
-                  <p>Пароль:<span class="value" id="bot-password-${nickname}">${profile.password}</span></p>
-                  <p>Прокси:<span class="value" id="bot-proxy-${nickname}">${profile.proxy}</span></p>
-                  <p id="extended-monitoring-ping-${nickname}" style="display: none;">Пинг:<span class="value" id="bot-ping-${nickname}">${profile.ping} мс</span></p>
-                  <p id="extended-monitoring-health-${nickname}" style="display: none;">Здоровье:<span class="value" id="bot-health-${nickname}">${profile.health} / 20</span></p>
-                  <p id="extended-monitoring-satiety-${nickname}" style="display: none;">Сытость:<span class="value" id="bot-satiety-${nickname}">${profile.satiety} / 20</span></p>
-                </div>
-
-                <div class="sep"></div>
-
-                <input type="text" class="group-input" id="bot-group-${nickname}" placeholder="Группа">
-
-                <div class="sep"></div>
-
-                <button class="btn spec" id="open-chat-${nickname}" style="display: none;">Открыть чат</button>
-                <button class="btn spec" id="open-map-${nickname}" style="display: none;">Открыть карту</button>
-                <button class="btn spec" id="solve-captcha-${nickname}" style="display: none;">Решить капчу</button>
-                <button class="btn spec" id="reset-${nickname}">Сбросить</button>
-                <button class="btn spec" id="disconnect-${nickname}" style="margin-bottom: 12px;">Отключить</button>
-
-                <div class="chat-container cover" id="chat-${nickname}">
-                  <div class="panel">
-                    <div class="left">
-                      <div class="custom-select">
-                        <select id="select-chat-filter-${nickname}">
-                          <option value="all">Все сообщения</option>
-                          <option value="bans">Блокировки</option>
-                          <option value="mentions">Упоминания</option>
-                          <option value="warnings">Предупреждения</option>
-                          <option value="links">Ссылки</option>
-                        </select>
-                      </div>
-
-                      <button class="btn min pretty" id="filter-chat-${nickname}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel-fill" viewBox="0 0 16 16">
-                          <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5z"/>
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div class="right">
-                      <button class="btn min pretty" id="clear-chat-${nickname}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
-                          <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
-                        </svg>
-                      </button>
-
-                      <button class="btn min pretty" id="close-chat-${nickname}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
-                          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="chat-content">
-                    <div class="monitoring-content" id="monitoring-chat-content-${nickname}"></div>
-                  </div>
-
-                  <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">
-                    <p class="signature">${nickname}:</p>
-
-                    <input type="text" class="glass-input" control="this" id="this-chat-message-${nickname}" placeholder="Сообщение" style="height: 28px; width: 250px;">
-                  </div>
-                </div>
-
-                <div class="cover" id="map-${nickname}">
-                  <div class="panel">
-                    <div class="right">
-                      <button class="btn min pretty" id="remove-map-${nickname}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
-                          <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
-                        </svg>
-                      </button>
-
-                      <button class="btn min pretty" id="close-map-${nickname}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
-                          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="bot-map-wrap" id="map-wrap-${nickname}">
-                    <div class="bot-map-render-status" id="map-render-status-${nickname}">Генерация карты, пожайлуста, подождите...</div>
-                    <div class="bot-map-render-progress" id="map-render-progress-${nickname}">Прогресс (блоков): <span class="bot-map-render-progress-count" id="map-render-progress-count-${nickname}">0</span> / 65536</div>
-
-                    <div id="save-map-wrap-${nickname}" style="display: none; margin-top: 30px; gap: 15px;">
-                      <input type="text" class="glass-input" id="save-map-path-${nickname}" placeholder="/home/User/MinecraftMaps/" style="height: 28px; width: 250px;">
-                      
-                      <button class="btn min" id="save-map-${nickname}">Сохранить</button>
-                    </div>  
-                  </div>
-                </div>
-              `;
-
-              this.botCardsContainer!.appendChild(card);
-              this.chatHistoryFilters[nickname] = 'all';
-
-              this.usernameList.push(nickname);
-
-              setTimeout(() => this.initializeBotCard(nickname), 200);
+              this.createBotCard(nickname, profile, statusColor);
             }
           }
         } catch (error) {
@@ -388,9 +229,163 @@ export class MonitoringManager {
     this.botCardsContainer!.style.display = 'none';
   }
 
-  private addListener(id: string, event: string, listener: EventListener): void {
+  private addTempListener(id: string, event: string, listener: EventListener): void {
     document.getElementById(id)?.addEventListener(event, listener);
     this.listeners.set(id, { event: event, listener: listener });
+  }
+
+  private createBotCard(nickname: string, profile: BotProfile, statusColor: string): void {
+    const steveIconPath = document.getElementById('steve-img') as HTMLImageElement;
+
+    const groupNameExamples = [
+      'KillauraGroup', 'bow_aim_group', 'AutoFarm', 
+      'AFK', 'TravelersGroup', 'miner_group', 
+      'ShulkerStealer', 'FarmerGroup', 'chat_spamming', 
+      'CheatTester', 'chest_stealer'
+    ];
+    
+    const groupNameExample = groupNameExamples[Math.floor(Math.random() * groupNameExamples.length)];
+
+    const card = document.createElement('div');
+    card.className = 'bot-card';
+    card.id = `bot-card-${nickname}`;
+
+    card.innerHTML = `
+      <div class="bot-card-head">
+        <img src="${steveIconPath.src}" class="image" draggable="false">
+        <div class="text">
+          <div>
+            <div class="bot-nickname" style="user-select: text; -moz-user-select: text;">${nickname}</div>
+            <div class="bot-status"><span id="bot-status-${nickname}" style="color: ${statusColor};">• ${profile.status}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bot-advanced-info">
+        <p>Версия:<span class="value" id="bot-version-${nickname}">${profile.version}</span></p>
+        <p>Пароль:<span class="value" id="bot-password-${nickname}">${profile.password}</span></p>
+        <p>Прокси:<span class="value" id="bot-proxy-${nickname}">${profile.proxy}</span></p>
+        <p id="extended-monitoring-ping-${nickname}" style="display: none;">Пинг:<span class="value" id="bot-ping-${nickname}">${profile.ping} мс</span></p>
+        <p id="extended-monitoring-health-${nickname}" style="display: none;">Здоровье:<span class="value" id="bot-health-${nickname}">${profile.health} / 20</span></p>
+        <p id="extended-monitoring-satiety-${nickname}" style="display: none;">Сытость:<span class="value" id="bot-satiety-${nickname}">${profile.satiety} / 20</span></p>
+      </div>
+
+      <div class="sep"></div>
+
+      <input type="text" class="group-input" id="bot-group-${nickname}" placeholder="Группа, например: ${groupNameExample}">
+
+      <div class="sep"></div>
+
+      <button class="btn spec" id="open-chat-${nickname}" style="display: none;">Открыть чат</button>
+      <button class="btn spec" id="open-map-${nickname}" style="display: none;">Открыть карту</button>
+      <button class="btn spec" id="solve-captcha-${nickname}" style="display: none;">Решить капчу</button>
+      <button class="btn spec" id="reset-${nickname}">Сбросить</button>
+      <button class="btn spec" id="disconnect-${nickname}" style="margin-bottom: 12px;">Отключить</button>
+
+      <div class="chat-container cover" id="chat-${nickname}">
+        <div class="panel">
+          <div class="left">
+            <div class="custom-select">
+              <select id="select-chat-filter-${nickname}">
+                <option value="all">Все сообщения</option>
+                <option value="bans">Блокировки</option>
+                <option value="mentions">Упоминания</option>
+                <option value="warnings">Предупреждения</option>
+                <option value="links">Ссылки</option>
+              </select>
+            </div>
+
+            <button class="btn min pretty" id="filter-chat-${nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel-fill" viewBox="0 0 16 16">
+                <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="right">
+            <button class="btn min pretty" id="clear-chat-${nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+              </svg>
+            </button>
+
+            <button class="btn min pretty" id="close-chat-${nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-content">
+          <div class="monitoring-content" id="monitoring-chat-content-${nickname}"></div>
+        </div>
+
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">
+          <p class="signature">${nickname}:</p>
+
+          <input type="text" class="glass-input" control="this" id="this-chat-message-${nickname}" placeholder="Введите сообщение" style="height: 28px; width: 250px;">
+        </div>
+      </div>
+
+      <div class="cover" id="map-${nickname}">
+        <div class="panel">
+          <div class="right">
+            <button class="btn min pretty" id="remove-map-${nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+              </svg>
+            </button>
+
+            <button class="btn min pretty" id="close-map-${nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="bot-map-wrap" id="map-wrap-${nickname}">
+          <div class="bot-map-render-status" id="map-render-status-${nickname}">Генерация карты, пожайлуста, подождите...</div>
+          <div class="bot-map-render-progress" id="map-render-progress-${nickname}">Прогресс (блоков): <span class="bot-map-render-progress-count" id="map-render-progress-count-${nickname}">0</span> / 65536</div>
+
+          <div id="save-map-wrap-${nickname}" style="display: none; margin-top: 30px; gap: 15px;">
+            <input type="text" class="glass-input" id="save-map-path-${nickname}" placeholder="/home/User/MinecraftMaps/" style="height: 28px; width: 250px;">
+            
+            <button class="btn min" id="save-map-${nickname}">Сохранить</button>
+          </div>  
+        </div>
+      </div>
+    `;
+
+    this.botCardsContainer?.appendChild(card);
+    this.chatHistoryFilters[nickname] = 'all';
+    this.usernameList.push(nickname);
+    this.initializeBotCard(nickname);
+  }
+
+  private updateBotCard(nickname: string, profile: BotProfile, statusColor: string): void {
+    const status = document.getElementById(`bot-status-${nickname}`) as HTMLElement;
+    const proxy = document.getElementById(`bot-proxy-${nickname}`) as HTMLElement;
+    const ping = document.getElementById(`bot-ping-${nickname}`) as HTMLElement;
+    const health = document.getElementById(`bot-health-${nickname}`) as HTMLElement;
+    const satiety = document.getElementById(`bot-satiety-${nickname}`) as HTMLElement;
+
+    if (health.innerText.split('/')[0].replace(' ', '') != profile.health.toString() || satiety.innerText.split('/')[0].replace(' ', '') != profile.satiety.toString()) {
+      const card = document.getElementById(`bot-card-${nickname}`);
+      
+      card?.classList.add('glow');
+
+      setTimeout(() => {
+        card?.classList.remove('glow');
+      }, 300);
+    }
+
+    status.innerHTML = `<span style="color: ${statusColor};">• ${profile.status}</span>`;
+    proxy.innerText = profile.proxy;
+    ping.innerText = `${profile.ping} мс`
+    health.innerText = `${profile.health} / 20`;
+    satiety.innerText = `${profile.satiety} / 20`;
   }
 
   private initializeBotCard(nickname: string): void {
@@ -427,7 +422,7 @@ export class MonitoringManager {
       (document.getElementById(`solve-captcha-${nickname}`) as HTMLButtonElement).style.display = 'flex';
     }
 
-    this.addListener(`bot-group-${nickname}`, 'input', async () => {
+    this.addTempListener(`bot-group-${nickname}`, 'input', async () => {
       try {
         const group = (document.getElementById(`bot-group-${nickname}`) as HTMLInputElement).value.replace(' ', '');
 
@@ -440,10 +435,10 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`open-chat-${nickname}`, 'click', () => (chat as HTMLElement).style.display = 'flex');
-    this.addListener(`close-chat-${nickname}`, 'click', () => (chat as HTMLElement).style.display = 'none');
+    this.addTempListener(`open-chat-${nickname}`, 'click', () => (chat as HTMLElement).style.display = 'flex');
+    this.addTempListener(`close-chat-${nickname}`, 'click', () => (chat as HTMLElement).style.display = 'none');
 
-    this.addListener(`open-map-${nickname}`, 'click', async () => {
+    this.addTempListener(`open-map-${nickname}`, 'click', async () => {
       (map as HTMLElement).style.display = 'flex';
 
       try {
@@ -485,13 +480,13 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`remove-map-${nickname}`, 'click', async () => {
+    this.addTempListener(`remove-map-${nickname}`, 'click', async () => {
       this.mapBase64Codes.delete(nickname);
       document.getElementById(`map-image-${nickname}`)?.remove();
       (document.getElementById(`save-map-wrap-${nickname}`) as HTMLElement).style.display = 'none';
     });
 
-    this.addListener(`save-map-${nickname}`, 'click', async () => {
+    this.addTempListener(`save-map-${nickname}`, 'click', async () => {
       try {
         const base64code = this.mapBase64Codes.get(nickname);
 
@@ -508,9 +503,9 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`close-map-${nickname}`, 'click', () => (map as HTMLElement).style.display = 'none');
+    this.addTempListener(`close-map-${nickname}`, 'click', () => (map as HTMLElement).style.display = 'none');
 
-    this.addListener(`disconnect-${nickname}`, 'click', async () => {
+    this.addTempListener(`disconnect-${nickname}`, 'click', async () => {
       try {
         const result = await invoke('disconnect_bot', {
           nickname: nickname
@@ -522,7 +517,7 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`reset-${nickname}`, 'click', async () => {
+    this.addTempListener(`reset-${nickname}`, 'click', async () => {
       try {
         const result = await invoke('reset_bot', {
           nickname: nickname
@@ -534,7 +529,7 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`filter-chat-${nickname}`, 'click', () => {
+    this.addTempListener(`filter-chat-${nickname}`, 'click', () => {
       try {
         const content = document.getElementById(`monitoring-chat-content-${nickname}`);
         const type = document.getElementById(`select-chat-filter-${nickname}`) as HTMLSelectElement;
@@ -551,7 +546,7 @@ export class MonitoringManager {
       }
     });
 
-    this.addListener(`clear-chat-${nickname}`, 'click', () => {
+    this.addTempListener(`clear-chat-${nickname}`, 'click', () => {
       const messages = document.querySelectorAll(`#monitoring-message-${nickname}`);
       messages.forEach(msg => msg.remove());
       this.chatMessageCounter[nickname] = 0;
@@ -572,17 +567,17 @@ export class MonitoringManager {
       log(result[1], `${result[0]}`);
     }
 
-    this.addListener(`chat-${nickname}`, 'keydown', async (e: Event) => (e as KeyboardEvent).key === 'Enter' ? await sendMsg(`this-chat-message-${nickname}`) : null);
+    this.addTempListener(`chat-${nickname}`, 'keydown', async (e: Event) => (e as KeyboardEvent).key === 'Enter' ? await sendMsg(`this-chat-message-${nickname}`) : null);
   
     switch (this.antiCaptchaType) {
       case 'web':
         document.getElementById(`solve-captcha-${nickname}`)?.setAttribute('captcha-url', 'none');
 
-        this.addListener(`solve-captcha-${nickname}`, 'click', () => {
+        this.addTempListener(`solve-captcha-${nickname}`, 'click', async () => {
           const captcha_url = (document.getElementById(`solve-captcha-${nickname}`) as HTMLButtonElement).getAttribute('captcha-url');
 
           if (captcha_url && captcha_url !== 'none') {
-            invoke('open_url', { url: captcha_url });
+            await invoke('open_url', { url: captcha_url });
           }
         });
 
@@ -615,13 +610,13 @@ export class MonitoringManager {
 
         document.getElementById(`bot-card-${nickname}`)?.appendChild(container);
 
-        this.addListener(`map-captcha-image-${nickname}`, 'keydown', async (e: Event) => (e as KeyboardEvent).key === 'Enter' ? await sendMsg(`send-captcha-code-${nickname}`) : null);
+        this.addTempListener(`map-captcha-image-${nickname}`, 'keydown', async (e: Event) => (e as KeyboardEvent).key === 'Enter' ? await sendMsg(`send-captcha-code-${nickname}`) : null);
 
-        this.addListener(`solve-captcha-${nickname}`, 'click', () => {
+        this.addTempListener(`solve-captcha-${nickname}`, 'click', () => {
           (document.getElementById(`map-captcha-image-${nickname}`) as HTMLElement).style.display = 'flex';
         });
 
-        this.addListener(`close-map-captcha-image-${nickname}`, 'click', () => {
+        this.addTempListener(`close-map-captcha-image-${nickname}`, 'click', () => {
           (document.getElementById(`map-captcha-image-${nickname}`) as HTMLElement).style.display = 'none';
         });
 

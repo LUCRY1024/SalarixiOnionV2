@@ -1,15 +1,14 @@
-use std::time::Duration;
-
+use azalea::container::ContainerHandle;
 use azalea::prelude::*;
 use azalea::Vec3;
 use azalea::core::position::BlockPos;
-use azalea::container::ContainerHandle;
 use serde::{Serialize, Deserialize};
+use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
 use crate::tools::*;
-use crate::common::get_block_state;
+use crate::common::{get_block_state, stop_bot_move};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,45 +73,78 @@ impl StealerModule {
     positions  
   }
 
-  async fn extract_all_items(&self, container: &ContainerHandle) {  
-    let menu = container.menu().unwrap();  
-       
-    for slot in 0..=26 {  
-      if let Some(item) = menu.slot(slot) {  
-        if !item.is_empty() {  
-          container.shift_click(slot); 
+  async fn extract_all_items(&self, bot: &Client, container: &ContainerHandle) {  
+    if let Some(menu) = container.menu() {
+      stop_bot_move(bot);
+
+      let nickname = bot.username();
+
+      STATES.set_state(&nickname, "can_walking", false);
+      STATES.set_state(&nickname, "can_sprinting", false);
+      STATES.set_state(&nickname, "can_attacking", false);
+      STATES.set_state(&nickname, "can_interacting", false);
+      STATES.set_state(&nickname, "can_eating", false);
+      STATES.set_state(&nickname, "can_drinking", false);
+      
+      for slot in 0..=26 {  
+        if let Some(item) = menu.slot(slot) {  
+          if !item.is_empty() {  
+            container.shift_click(slot); 
+          }  
         }  
       }  
-    }  
+
+      STATES.set_state(&nickname, "can_walking", true);
+      STATES.set_state(&nickname, "can_sprinting", true);
+      STATES.set_state(&nickname, "can_attacking", true);
+      STATES.set_state(&nickname, "can_interacting", true);
+      STATES.set_state(&nickname, "can_eating", true);
+      STATES.set_state(&nickname, "can_drinking", true);
+    }
   }
 
-  pub async fn enable(&self, bot: &Client, options: StealerOptions) {
+  async fn stealing(&self, bot: &Client, options: StealerOptions) {
+    let nickname = bot.username();
+
     loop {
       let position = bot.position();  
       let direction = bot.direction();
 
-      let target_positions = self.find_nearest_targets(bot, position, &options.target, if let Some(radius) = options.radius { radius } else { 4 });
+      let target_positions = self.find_nearest_targets(bot, position, &options.target, options.radius.unwrap_or(5));
         
       for pos in target_positions {  
-        bot.look_at(pos.center());  
+        if STATES.get_state(&nickname, "can_looking") && STATES.get_state(&nickname, "can_interacting") {
+          STATES.set_mutual_states(&nickname, "looking", true);
+          STATES.set_mutual_states(&nickname, "interacting", true);
 
-        sleep(Duration::from_millis(randuint(50, 100))).await;
-            
-        if let Some(container) = bot.open_container_at(pos).await {  
-          self.extract_all_items(&container).await;  
-          container.close();
-          sleep(Duration::from_millis(randuint(200, 300))).await;
-        }  
+          bot.look_at(pos.center());  
+
+          sleep(Duration::from_millis(randuint(50, 100))).await;
+              
+          if let Some(container) = bot.open_container_at(pos).await {  
+            self.extract_all_items(bot, &container).await;  
+            container.close();
+            sleep(Duration::from_millis(randuint(200, 350))).await;
+          }  
+
+          STATES.set_mutual_states(&nickname, "looking", false);
+          STATES.set_mutual_states(&nickname, "interacting", false);
+        }
       } 
 
-      bot.set_direction(direction.0 + randfloat(-2.5, 2.5) as f32, direction.1 + randfloat(-2.5, 2.5) as f32);
+      if STATES.get_state(&nickname, "can_looking") {
+        bot.set_direction(direction.0 + randfloat(-2.5, 2.5) as f32, direction.1 + randfloat(-2.5, 2.5) as f32);
+      }
 
       sleep(Duration::from_millis(options.delay.unwrap_or(1000))).await;
     }
+  }
+
+  pub async fn enable(&self, bot: &Client, options: StealerOptions) {
+    self.stealing(bot, options).await;
   } 
 
-  pub fn stop(&self, bot: &Client) {
-    kill_task(&bot.username(), "stealer");
-    bot.get_inventory().close();
+  pub fn stop(&self, nickname: &String) {
+    kill_task(nickname, "stealer");
   }
 }

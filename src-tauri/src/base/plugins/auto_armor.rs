@@ -5,7 +5,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::{close_inventory, find_empty_slot_in_invenotry, get_inventory, get_inventory_menu};
+use crate::common::{find_empty_slot_in_invenotry, get_inventory_menu, inventory_shift_click};
 
 
 #[derive(Debug, Clone)]
@@ -49,8 +49,9 @@ impl AutoArmorPlugin {
   async fn equip_armor(&self, bot: &Client) {
     let mut armors = vec![];
 
+    if let Some(menu) = get_inventory_menu(bot) {
       for slot in 0..=48 {  
-        if let Some(item) = bot.menu().slot(slot) {
+        if let Some(item) = menu.slot(slot) {
           if slot > 8 {
             if let Some(armor) = self.is_armor(item, slot) {
               armors.push(armor);
@@ -58,6 +59,7 @@ impl AutoArmorPlugin {
           }
         }
       }
+    }
 
     let armor_set = self.get_best_armor(bot, armors);
 
@@ -87,31 +89,20 @@ impl AutoArmorPlugin {
   }
 
   async fn equip(&self, bot: &Client, armor_slot: usize, target_slot: usize) {
-    if let Some(inventory) = get_inventory(bot) {
-      let nickname = bot.username();
-
-      if let Some(menu) = get_inventory_menu(bot) {
-        if let Some(item) = menu.slot(target_slot) {
-          if !item.is_empty() {
-            if let Some(_) = find_empty_slot_in_invenotry(bot) {
-              inventory.shift_click(target_slot);
-              sleep(Duration::from_millis(50)).await;
-            } else {
-              return;
-            }
+    if let Some(menu) = get_inventory_menu(bot) {
+      if let Some(item) = menu.slot(target_slot) {
+        if !item.is_empty() {
+          if let Some(_) = find_empty_slot_in_invenotry(bot) {
+            inventory_shift_click(bot, target_slot);
+            sleep(Duration::from_millis(50)).await;
+          } else {
+            return;
           }
         }
       }
-      
-      inventory.shift_click(armor_slot);
-
-      sleep(Duration::from_millis(50)).await;
-
-      close_inventory(bot);
-
-      STATES.set_state(&nickname, "can_walking", true);
-      STATES.set_state(&nickname, "can_sprinting", true);
     }
+    
+    inventory_shift_click(bot, armor_slot);
   }
 
   fn is_armor(&self, item: &ItemStack, slot: usize) -> Option<Armor> {

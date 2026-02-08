@@ -188,6 +188,7 @@ impl KillauraModule {
 
         loop {
           if !TASKS.get_task_activity(&nickname, "killaura") {
+            STATES.set_mutual_states(&nickname, "looking", false);
             break;
           }
 
@@ -221,7 +222,7 @@ impl KillauraModule {
       }
     };
 
-    self.aiming(bot.clone(), config.target.clone(), config.distance);
+    self.aiming(bot.clone(), config.target.clone(), config.chase_distance);
 
     if options.use_chase {
       self.chase(bot.clone(), config.target.clone(), config.chase_distance, config.min_distance_to_target);
@@ -254,7 +255,7 @@ impl KillauraModule {
 
           if options.use_critical {
             bot.jump();
-            sleep(Duration::from_millis(randuint(50, 100))).await;
+            sleep(Duration::from_millis(randuint(300, 400))).await;
           }
           
           bot.attack(entity);
@@ -292,7 +293,7 @@ impl KillauraModule {
     let nickname = bot.username();
 
     loop {
-      if STATES.get_state(&nickname, "can_attacking") &&  !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
+      if STATES.get_state(&nickname, "can_attacking") && !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
         if let Some(_) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
           STATES.set_mutual_states(&nickname, "attacking", true);
           
@@ -312,7 +313,7 @@ impl KillauraModule {
 
           if options.use_critical {
             bot.jump();
-            sleep(Duration::from_millis(randuint(50, 150))).await;
+            sleep(Duration::from_millis(randuint(300, 400))).await;
           }
           
           if let Some(e) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {

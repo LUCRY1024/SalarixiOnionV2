@@ -66,7 +66,7 @@ pub fn emit_event(event: EventType) {
           let _ = handle.emit("log", payload);
         },
         EventType::Chat(payload) => {
-          let _ = handle.emit("chat", payload);
+          let _ = handle.emit("chat-message", payload);
         },
         EventType::MapRenderProgress(payload) => {
           let _ = handle.emit("map-render-progress", payload);

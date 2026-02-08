@@ -199,10 +199,10 @@ impl FarmerModule {
 
     if !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") && STATES.get_state(&nickname, "can_interacting") && STATES.get_state(&nickname, "can_looking") {
       if let Some(state) = get_block_state(bot, block_pos) {
-        STATES.set_mutual_states(&nickname, "looking", true);
-        STATES.set_mutual_states(&nickname, "interacting", true);
         STATES.set_state(&nickname, "can_eating", false);
         STATES.set_state(&nickname, "can_drinking", false);
+        STATES.set_mutual_states(&nickname, "looking", true);
+        STATES.set_mutual_states(&nickname, "interacting", true);
 
         if self.this_is_garden_bed_without_plant(bot, state.id(), block_pos) {
           self.look_at_block(bot, block_pos).await;

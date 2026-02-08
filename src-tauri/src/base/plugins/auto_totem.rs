@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::{get_inventory_menu, move_item};
+use crate::common::{get_inventory_menu, inventory_move_item};
 
 
 pub struct AutoTotemPlugin;
@@ -41,7 +41,7 @@ impl AutoTotemPlugin {
       for (slot, item) in menu.slots().iter().enumerate() {  
         if slot != 45 {
           if item.kind() == ItemKind::TotemOfUndying {
-            move_item(bot, ItemKind::TotemOfUndying, slot, 45).await;
+            inventory_move_item(bot, ItemKind::TotemOfUndying, slot, 45).await;
           }
         }
       }

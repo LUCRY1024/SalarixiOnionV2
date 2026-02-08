@@ -213,6 +213,7 @@ pub fn get_inventory(bot: &Client) -> Option<ContainerHandleRef> {
   STATES.set_state(&nickname, "can_walking", false);
   STATES.set_state(&nickname, "can_sprinting", false);
   STATES.set_state(&nickname, "can_attacking", false);
+  STATES.set_state(&nickname, "can_interacting", false);
 
   if let Some(inventory) = bot.get_component::<Inventory>() {
     return Some(ContainerHandleRef::new(inventory.id, bot.clone()));
@@ -231,6 +232,7 @@ pub fn close_inventory(bot: &Client) {
     STATES.set_state(&nickname, "can_walking", true);
     STATES.set_state(&nickname, "can_sprinting", true);
     STATES.set_state(&nickname, "can_attacking", true);
+    STATES.set_state(&nickname, "can_interacting", true);
   }
 }
 
@@ -254,80 +256,35 @@ pub fn get_inventory_menu(bot: &Client) -> Option<Menu> {
 
 // Функция, позволяющая боту безопасно переместить предмет в hotbar и взять его
 pub async fn take_item(bot: &Client, source_slot: usize) {
-  if let Some(inventory) = get_inventory(bot) {
-    let nickname = bot.username();
+  if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(source_slot) {
+    if get_selected_hotbar_slot(bot) != hotbar_slot {
+      bot.set_selected_hotbar_slot(hotbar_slot);
+    }
+  } else {
+    if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
+      inventory_swap_click(bot, source_slot, empty_slot as usize).await;
 
-    if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(source_slot) {
+      if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
+        if get_selected_hotbar_slot(bot) != slot {
+          sleep(Duration::from_millis(50)).await;
+          bot.set_selected_hotbar_slot(slot);
+        }
+      }
+    } else {
+      let random_slot = randuint(36, 44) as usize;
+
+      inventory_shift_click(bot, random_slot);
+      sleep(Duration::from_millis(50)).await;
+      inventory_swap_click(bot, source_slot, random_slot).await;
+
+      sleep(Duration::from_millis(50)).await;
+
+      let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
+
       if get_selected_hotbar_slot(bot) != hotbar_slot {
         bot.set_selected_hotbar_slot(hotbar_slot);
       }
-    } else {
-      if let Some(empty_slot) = find_empty_slot_in_hotbar(bot) {
-        inventory.left_click(source_slot);
-        sleep(Duration::from_millis(50)).await;
-        inventory.left_click(empty_slot);
-
-        if let Some(slot) = convert_inventory_slot_to_hotbar_slot(empty_slot as usize) {
-          if get_selected_hotbar_slot(bot) != slot {
-            sleep(Duration::from_millis(50)).await;
-            bot.set_selected_hotbar_slot(slot);
-            sleep(Duration::from_millis(50)).await;
-          }
-        }
-      } else {
-        let random_slot = randuint(36, 44) as usize;
-
-        inventory.shift_click(random_slot);
-        sleep(Duration::from_millis(50)).await;
-        inventory.left_click(source_slot);
-        sleep(Duration::from_millis(50)).await;
-        inventory.left_click(random_slot);
-
-        sleep(Duration::from_millis(50)).await;
-
-        let hotbar_slot = convert_inventory_slot_to_hotbar_slot(random_slot).unwrap_or(0);
-
-        if get_selected_hotbar_slot(bot) != hotbar_slot {
-          bot.set_selected_hotbar_slot(hotbar_slot);
-        }
-      }
-
-      close_inventory(bot);
     }
-
-    STATES.set_mutual_states(&nickname, "walking", false);
-    STATES.set_mutual_states(&nickname, "sprinting", false);
-  }
-}
-
-// Функция безопасного перемещения предмета
-pub async fn move_item(bot: &Client, kind: ItemKind, source_slot: usize, target_slot: usize) {
-  if let Some(inventory) = get_inventory(bot) {
-    let nickname = bot.username();
-
-    if let Some(menu) = get_inventory_menu(bot) {
-      if let Some(item) = menu.slot(target_slot) {
-        if item.kind() == kind {
-          return;
-        }
-
-        if !item.is_empty() {
-          inventory.shift_click(target_slot);
-          sleep(Duration::from_millis(50)).await;
-        }
-      }
-    }
-
-    inventory.left_click(source_slot);
-    sleep(Duration::from_millis(50)).await;
-    inventory.left_click(target_slot);
-
-    sleep(Duration::from_millis(50)).await;
-
-    close_inventory(bot);
-
-    STATES.set_mutual_states(&nickname, "walking", false);
-    STATES.set_mutual_states(&nickname, "sprinting", false);
   }
 }
 
@@ -347,6 +304,65 @@ pub fn move_item_to_offhand(bot: &Client, kind: ItemKind) {
     direction: Direction::Down,
     seq: 0
   });
+}
+
+// Функция безопасного shift-клика в инвентаре
+pub fn inventory_shift_click(bot: &Client, slot: usize) {
+  if let Some(inventory) = get_inventory(bot) {
+    inventory.shift_click(slot);
+
+    let nickname = bot.username();
+    
+    STATES.set_state(&nickname, "can_walking", true);
+    STATES.set_state(&nickname, "can_sprinting", true);
+    STATES.set_state(&nickname, "can_attacking", true);
+    STATES.set_state(&nickname, "can_interacting", true);
+  }
+}
+
+// Функция безопасного swap-клика в инвентаре
+pub async fn inventory_swap_click(bot: &Client, source_slot: usize, target_slot: usize) {
+  if let Some(inventory) = get_inventory(bot) {
+    inventory.left_click(source_slot);
+    sleep(Duration::from_millis(50)).await;
+    inventory.left_click(target_slot);
+
+    let nickname = bot.username();
+    
+    STATES.set_state(&nickname, "can_walking", true);
+    STATES.set_state(&nickname, "can_sprinting", true);
+    STATES.set_state(&nickname, "can_attacking", true);
+    STATES.set_state(&nickname, "can_interacting", true);
+  }
+}
+
+// Функция безопасного перемещения предмета
+pub async fn inventory_move_item(bot: &Client, kind: ItemKind, source_slot: usize, target_slot: usize) {
+  let nickname = bot.username();
+
+  if let Some(menu) = get_inventory_menu(bot) {
+    if let Some(item) = menu.slot(target_slot) {
+      if item.kind() == kind {
+        return;
+      }
+
+      if !item.is_empty() {
+        inventory_shift_click(bot, target_slot);
+        sleep(Duration::from_millis(50)).await;
+      }
+    }
+  }
+
+  inventory_swap_click(bot, source_slot, target_slot).await;
+
+  sleep(Duration::from_millis(50)).await;
+
+  close_inventory(bot);
+
+  STATES.set_state(&nickname, "can_walking", true);
+  STATES.set_state(&nickname, "can_sprinting", true);
+  STATES.set_state(&nickname, "can_attacking", true);
+  STATES.set_state(&nickname, "can_interacting", true);
 }
 
 // Функция безопасного задания направления хотьбы для бота
@@ -414,19 +430,10 @@ pub fn start_use_item(bot: &Client, hand: InteractionHand) {
 
 // Функция отправки пакета ReleaseUseItem
 pub fn release_use_item(bot: &Client) {
-  let x_rot = bot.direction().1;
-  let mut direction = Direction::Down;
-
-  if x_rot < 18.0 {
-    direction = Direction::Down;
-  } else if x_rot < -18.0 {
-    direction = Direction::Up;
-  }
-
   bot.write_packet(ServerboundPlayerAction {  
     action: Action::ReleaseUseItem,  
     pos: BlockPos::new(0, 0, 0),  
-    direction: direction,  
+    direction: Direction::Down,  
     seq: 0
   });
 }
@@ -434,108 +441,106 @@ pub fn release_use_item(bot: &Client) {
 // Функция распознавания твёрдого блока
 pub fn this_is_solid_block(kind: ItemKind) -> bool {
   match kind {
-    ItemKind::GrassBlock => { return true; },
-    ItemKind::Podzol => { return true; },
-    ItemKind::Mycelium => { return true; },
-    ItemKind::DirtPath => { return true; },
-    ItemKind::Dirt => { return true; },
-    ItemKind::CoarseDirt => { return true; },
-    ItemKind::RootedDirt => { return true; },
-    ItemKind::Farmland => { return true; },
-    ItemKind::Mud => { return true; },
-    ItemKind::Clay => { return true; },
-    ItemKind::Sandstone => { return true; },
-    ItemKind::RedSandstone => { return true; },
-    ItemKind::Ice => { return true; },
-    ItemKind::PackedIce => { return true; },
-    ItemKind::BlueIce => { return true; },
-    ItemKind::SnowBlock => { return true; },
-    ItemKind::MossBlock => { return true; },
-    ItemKind::PaleMossBlock => { return true; },
-    ItemKind::Stone => { return true; },
-    ItemKind::Deepslate => { return true; },
-    ItemKind::Granite => { return true; },
-    ItemKind::Diorite => { return true; },
-    ItemKind::Andesite => { return true; },
-    ItemKind::Calcite => { return true; },
-    ItemKind::Tuff => { return true; },
-    ItemKind::DripstoneBlock => { return true; },
-    ItemKind::Prismarine => { return true; },
-    ItemKind::Obsidian => { return true; },
-    ItemKind::CryingObsidian => { return true; },
-    ItemKind::Netherrack => { return true; },
-    ItemKind::CrimsonNylium => { return true; },
-    ItemKind::WarpedNylium => { return true; },
-    ItemKind::SoulSoil => { return true; },
-    ItemKind::BoneBlock => { return true; },
-    ItemKind::Blackstone => { return true; },
-    ItemKind::Basalt => { return true; },
-    ItemKind::SmoothBasalt => { return true; },
-    ItemKind::EndStone => { return true; },
-    ItemKind::OakLog => { return true; },
-    ItemKind::SpruceLog => { return true; },
-    ItemKind::BirchLog => { return true; },
-    ItemKind::JungleLog => { return true; },
-    ItemKind::AcaciaLog => { return true; },
-    ItemKind::DarkOakLog => { return true; },
-    ItemKind::MangroveLog => { return true; },
-    ItemKind::CherryLog => { return true; },
-    ItemKind::PaleOakLog => { return true; },
-    ItemKind::MushroomStem => { return true; },
-    ItemKind::CrimsonStem => { return true; },
-    ItemKind::WarpedStem => { return true; },
-    ItemKind::WhiteWool => { return true; },
-    ItemKind::LightGrayWool => { return true; },
-    ItemKind::GrayWool => { return true; },
-    ItemKind::BlackWool => { return true; },
-    ItemKind::BrownWool => { return true; },
-    ItemKind::RedWool => { return true; },
-    ItemKind::OrangeWool => { return true; },
-    ItemKind::YellowWool => { return true; },
-    ItemKind::LimeWool => { return true; },
-    ItemKind::GreenWool => { return true; },
-    ItemKind::CyanWool => { return true; },
-    ItemKind::LightBlueWool => { return true; },
-    ItemKind::BlueWool => { return true; },
-    ItemKind::PurpleWool => { return true; },
-    ItemKind::MagentaWool => { return true; },
-    ItemKind::PinkWool => { return true; },
-    ItemKind::WhiteTerracotta => { return true; },
-    ItemKind::LightGrayTerracotta => { return true; },
-    ItemKind::GrayTerracotta => { return true; },
-    ItemKind::BlackTerracotta => { return true; },
-    ItemKind::BrownTerracotta => { return true; },
-    ItemKind::RedTerracotta => { return true; },
-    ItemKind::OrangeTerracotta => { return true; },
-    ItemKind::YellowTerracotta => { return true; },
-    ItemKind::LimeTerracotta => { return true; },
-    ItemKind::GreenTerracotta => { return true; },
-    ItemKind::CyanTerracotta => { return true; },
-    ItemKind::LightBlueTerracotta => { return true; },
-    ItemKind::BlueTerracotta => { return true; },
-    ItemKind::PurpleTerracotta => { return true; },
-    ItemKind::MagentaTerracotta => { return true; },
-    ItemKind::PinkTerracotta => { return true; },
-    ItemKind::WhiteConcrete => { return true; },
-    ItemKind::LightGrayConcrete => { return true; },
-    ItemKind::GrayConcrete => { return true; },
-    ItemKind::BlackConcrete => { return true; },
-    ItemKind::BrownConcrete => { return true; },
-    ItemKind::RedConcrete => { return true; },
-    ItemKind::OrangeConcrete => { return true; },
-    ItemKind::YellowConcrete => { return true; },
-    ItemKind::LimeConcrete => { return true; },
-    ItemKind::GreenConcrete => { return true; },
-    ItemKind::CyanConcrete => { return true; },
-    ItemKind::LightBlueConcrete => { return true; },
-    ItemKind::BlueConcrete => { return true; },
-    ItemKind::PurpleConcrete => { return true; },
-    ItemKind::MagentaConcrete => { return true; },
-    ItemKind::PinkConcrete => { return true; },
-    _ => {}
+    ItemKind::GrassBlock => return true,
+    ItemKind::Podzol => return true,
+    ItemKind::Mycelium => return true,
+    ItemKind::DirtPath => return true,
+    ItemKind::Dirt => return true,
+    ItemKind::CoarseDirt => return true,
+    ItemKind::RootedDirt => return true,
+    ItemKind::Farmland => return true,
+    ItemKind::Mud => return true,
+    ItemKind::Clay => return true,
+    ItemKind::Sandstone => return true,
+    ItemKind::RedSandstone => return true,
+    ItemKind::Ice => return true,
+    ItemKind::PackedIce => return true,
+    ItemKind::BlueIce => return true,
+    ItemKind::SnowBlock => return true,
+    ItemKind::MossBlock => return true,
+    ItemKind::PaleMossBlock => return true,
+    ItemKind::Stone => return true,
+    ItemKind::Deepslate => return true,
+    ItemKind::Granite => return true,
+    ItemKind::Diorite => return true,
+    ItemKind::Andesite => return true,
+    ItemKind::Calcite => return true,
+    ItemKind::Tuff => return true,
+    ItemKind::DripstoneBlock => return true,
+    ItemKind::Prismarine => return true,
+    ItemKind::Obsidian => return true,
+    ItemKind::CryingObsidian => return true,
+    ItemKind::Netherrack => return true,
+    ItemKind::CrimsonNylium => return true,
+    ItemKind::WarpedNylium => return true,
+    ItemKind::SoulSoil => return true,
+    ItemKind::BoneBlock => return true,
+    ItemKind::Blackstone => return true,
+    ItemKind::Basalt => return true,
+    ItemKind::SmoothBasalt => return true,
+    ItemKind::EndStone => return true,
+    ItemKind::OakLog => return true,
+    ItemKind::SpruceLog => return true,
+    ItemKind::BirchLog => return true,
+    ItemKind::JungleLog => return true,
+    ItemKind::AcaciaLog => return true,
+    ItemKind::DarkOakLog => return true,
+    ItemKind::MangroveLog => return true,
+    ItemKind::CherryLog => return true,
+    ItemKind::PaleOakLog => return true,
+    ItemKind::MushroomStem => return true,
+    ItemKind::CrimsonStem => return true,
+    ItemKind::WarpedStem => return true,
+    ItemKind::WhiteWool => return true,
+    ItemKind::LightGrayWool => return true,
+    ItemKind::GrayWool => return true,
+    ItemKind::BlackWool => return true,
+    ItemKind::BrownWool => return true,
+    ItemKind::RedWool => return true,
+    ItemKind::OrangeWool => return true,
+    ItemKind::YellowWool => return true,
+    ItemKind::LimeWool => return true,
+    ItemKind::GreenWool => return true,
+    ItemKind::CyanWool => return true,
+    ItemKind::LightBlueWool => return true,
+    ItemKind::BlueWool => return true,
+    ItemKind::PurpleWool => return true,
+    ItemKind::MagentaWool => return true,
+    ItemKind::PinkWool => return true,
+    ItemKind::WhiteTerracotta => return true,
+    ItemKind::LightGrayTerracotta => return true,
+    ItemKind::GrayTerracotta => return true,
+    ItemKind::BlackTerracotta => return true,
+    ItemKind::BrownTerracotta => return true,
+    ItemKind::RedTerracotta => return true,
+    ItemKind::OrangeTerracotta => return true,
+    ItemKind::YellowTerracotta => return true,
+    ItemKind::LimeTerracotta => return true,
+    ItemKind::GreenTerracotta => return true,
+    ItemKind::CyanTerracotta => return true,
+    ItemKind::LightBlueTerracotta => return true,
+    ItemKind::BlueTerracotta => return true,
+    ItemKind::PurpleTerracotta => return true,
+    ItemKind::MagentaTerracotta => return true,
+    ItemKind::PinkTerracotta => return true,
+    ItemKind::WhiteConcrete => return true,
+    ItemKind::LightGrayConcrete => return true,
+    ItemKind::GrayConcrete => return true,
+    ItemKind::BlackConcrete => return true,
+    ItemKind::BrownConcrete => return true,
+    ItemKind::RedConcrete => return true,
+    ItemKind::OrangeConcrete => return true,
+    ItemKind::YellowConcrete => return true,
+    ItemKind::LimeConcrete => return true,
+    ItemKind::GreenConcrete => return true,
+    ItemKind::CyanConcrete => return true,
+    ItemKind::LightBlueConcrete => return true,
+    ItemKind::BlueConcrete => return true,
+    ItemKind::PurpleConcrete => return true,
+    ItemKind::MagentaConcrete => return true,
+    ItemKind::PinkConcrete => return true,
+    _ => return false
   }
-
-  false
 }
 
 // Структура EntityFilter

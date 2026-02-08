@@ -1431,18 +1431,17 @@ textarea::-webkit-resizer {
 
 .bot-card .btn.spec {
   width: calc(100% - 20px);
-  margin: 6px 10px 0 10px;
-  padding: 5px 0;
-  font-size: 15px;
+  margin-left: 10px;
+  font-size: 14px;
   font-weight: normal;
   font-family: var(--global-font-family);
-  color: #d1d1d1;
+  color: #dfdfdf;
   text-align: center;
   letter-spacing: 1px;
   border-radius: 4px;
-  border: 1px solid #2b2b2b;
-  background: linear-gradient(90deg, #181818, #1b1b1b);
-  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -1450,11 +1449,11 @@ textarea::-webkit-resizer {
 }
 
 .bot-card .btn.spec:hover {
-  border-color: #3b3b3b;
+  border-color: #3b3b3ba1;
 }
 
 .bot-card .btn.spec:active {
-  border-color: #292929;
+  border-color: #292929a8;
 }
 
 .bot-card-head {
@@ -1520,9 +1519,9 @@ textarea::-webkit-resizer {
 }
 
 .bot-card .group-input {
-  width: 195px; 
-  margin-left: 10px; 
-  height: 30px; 
+  width: 100%; 
+  margin: 0; 
+  height: 20px; 
   border-radius: 4px;
   border-color: transparent;
   background-color: transparent;

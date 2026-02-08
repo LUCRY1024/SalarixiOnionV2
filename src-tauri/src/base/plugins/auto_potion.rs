@@ -9,7 +9,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::{get_inventory_menu, start_use_item};
+use crate::common::{get_health, get_inventory_menu, start_use_item};
 use crate::tools::*;
 use crate::common::{get_bot_physics, take_item};
 
@@ -45,21 +45,17 @@ impl AutoPotionPlugin {
   } 
 
   async fn drink(&self, bot: &Client) {
-    let health = if let Some(health) = bot.get_component::<Health>() {
-      health
-    } else {
-      return;
-    };
+    let health = get_health(bot);
 
     let nickname = bot.username();
 
-    if health.0 < 20.0 {
+    if health < 20 {
       let potions = self.find_potion_in_inventory(bot);
 
       if potions.len() > 0 {
         if let Some(potion) = self.get_best_potion(bot, potions) {
           if let Some(slot) = potion.slot {
-            if health.0 < 10.0 && !STATES.get_state(&nickname, "is_eating") {
+            if health < 10 && !STATES.get_state(&nickname, "is_eating") {
               STATES.set_state(&nickname, "can_eating", false);
             } else {
               STATES.set_state(&nickname, "can_eating", true);
@@ -69,11 +65,12 @@ impl AutoPotionPlugin {
               let mut should_drink = true;
 
               if STATES.get_state(&nickname, "is_attacking") || STATES.get_state(&nickname, "is_interacting") {
-                should_drink = !randchance(health.0 as f64 / 20.0);
+                should_drink = !randchance(health as f64 / 20.0);
               }
 
               if should_drink {
                 STATES.set_state(&nickname, "can_eating", false);
+                STATES.set_state(&nickname, "can_interacting", false);
                 STATES.set_mutual_states(&nickname, "drinking", true);
 
                 take_item(bot, slot).await;
@@ -82,6 +79,7 @@ impl AutoPotionPlugin {
                 sleep(Duration::from_millis(50)).await;
 
                 STATES.set_state(&nickname, "can_eating", true);
+                STATES.set_state(&nickname, "can_interacting", true);
                 STATES.set_state(&nickname, "can_walking", true);
                 STATES.set_state(&nickname, "can_sprinting", true);
                 STATES.set_mutual_states(&nickname, "drinking", false);
@@ -100,23 +98,15 @@ impl AutoPotionPlugin {
         sleep(Duration::from_millis(2600)).await;
       },
       "splash" => {
-        let nickname = bot.username();
-
-        STATES.set_mutual_states(&nickname, "looking", true);
-
         let direction = bot.direction();
 
         bot.set_direction(direction.0 + randfloat(-5.5, 5.5) as f32, randfloat(87.0, 90.0) as f32);
-
+        
         sleep(Duration::from_millis(randuint(400, 600))).await;
-
         start_use_item(bot, InteractionHand::MainHand);
-
         sleep(Duration::from_millis(randuint(300, 500))).await;
 
         bot.set_direction(direction.0 + randfloat(-2.5, 2.5) as f32, direction.1 + randfloat(-2.5, 2.5) as f32);
-      
-        STATES.set_mutual_states(&nickname, "looking", false);
       },
       _ => {}
     }

@@ -1,12 +1,15 @@
 use azalea::prelude::*;
 use azalea::Vec3;
+use azalea::protocol::packets::game::s_interact::InteractionHand;
 use azalea::registry::builtin::ItemKind;
 use azalea::ecs::prelude::Entity;
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use tokio::time::sleep;
 
+use crate::common::get_eye_position;
 use crate::common::get_inventory_menu;
+use crate::common::start_use_item;
 use crate::tools::*;
 use crate::base::*;
 use crate::common::{EntityFilter, get_nearest_entity, get_entity_position, take_item, release_use_item};
@@ -55,12 +58,12 @@ impl BowAimModule {
       if let Some(slot) = self.find_bow_in_inventory(bot) {
         take_item(bot, slot).await;
 
-        bot.start_use_item();
+        start_use_item(bot, InteractionHand::MainHand);
 
         sleep(Duration::from_millis(randuint(800, 1100))).await;
 
         let target_pos = get_entity_position(bot, entity);
-        let distance = bot.eye_position().distance_to(target_pos);
+        let distance = get_eye_position(bot).distance_to(target_pos);
 
         bot.look_at(Vec3::new(
           target_pos.x + randfloat(-0.001158, 0.001158),
@@ -71,10 +74,10 @@ impl BowAimModule {
         if distance > 50.0 {
           bot.jump();
 
-          sleep(Duration::from_millis(50)).await;
+          sleep(Duration::from_millis(100)).await;
 
           let target_pos = get_entity_position(bot, entity);
-          let distance = bot.eye_position().distance_to(target_pos);
+          let distance = get_eye_position(bot).distance_to(target_pos);
 
           bot.look_at(Vec3::new(
             target_pos.x + randfloat(-0.001158, 0.001158),

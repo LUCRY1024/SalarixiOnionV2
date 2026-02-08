@@ -34,12 +34,10 @@ impl AutoLookPlugin {
   } 
 
   async fn look(&self, bot: &Client) {
-    if let Some(entity) = get_nearest_entity(bot, EntityFilter::new(bot, "any", 14.0)) {
-      if let Some(entity_pos) = bot.get_entity_component::<Position>(entity) {
-        let nickname = bot.username();
-
-        if bot.is_goto_target_reached() {
-          if STATES.get_state(&nickname, "can_looking") {
+    if STATES.get_state(&bot.username(), "can_looking") {
+      if bot.is_goto_target_reached() {
+        if let Some(entity) = get_nearest_entity(bot, EntityFilter::new(bot, "any", 14.0)) {
+          if let Some(entity_pos) = bot.get_entity_component::<Position>(entity) {
             let pos = Vec3::new(
               entity_pos.x + randfloat(-0.1, 0.1), 
               entity_pos.y + randfloat(-0.1, 0.1), 
