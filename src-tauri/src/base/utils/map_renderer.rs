@@ -12,7 +12,6 @@ use base64::engine::general_purpose::STANDARD;
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 
-use crate::base::get_active;
 use crate::common::*;
 use crate::emit::{EventType, LogEventPayload, MapRenderProgressEventPayload, emit_event};
 use crate::tools::{Classes, randint, randstr};
@@ -48,10 +47,6 @@ impl MapRenderer {
         let mut exist_block_above = false;
 
         for y in 0..=20 {
-          if !get_active() {
-            return "".to_string();
-          }
-
           let vector = Vec3::new(
             pos.x + x as f64,
             pos.y + y as f64,
@@ -65,10 +60,6 @@ impl MapRenderer {
               let mut current_y = vector.y;
 
               loop {
-                if !get_active() {
-                  return "".to_string();
-                }
-
                 current_y += 1.0;
 
                 if let Some(s) = get_block_state(bot, BlockPos::from(Vec3::new(vector.x, current_y, vector.z))) {
@@ -82,12 +73,12 @@ impl MapRenderer {
               let new_block_pos = BlockPos::from(Vec3::new(vector.x, current_y, vector.z));
 
               if let Some(s) = get_block_state(bot, new_block_pos) {
-                blocks.push((s, (block_pos.x, block_pos.y, block_pos.z)));
+                blocks.push((s, (block_pos.x, block_pos.z)));
                 exist_block_above = true;
                 break;
               }
             } else {
-              blocks.push((state, (block_pos.x, block_pos.y, block_pos.z)));
+              blocks.push((state, (block_pos.x, block_pos.z)));
             }
           }
         } 
@@ -95,10 +86,6 @@ impl MapRenderer {
         if !exist_block_above {
           for y in 0..=40 {
             if y % 3 == 0 {
-              if !get_active() {
-                return "".to_string();
-              }
-
               let vector = Vec3::new(
                 pos.x + x as f64,
                 pos.y - y as f64,
@@ -108,7 +95,7 @@ impl MapRenderer {
               let block_pos = BlockPos::from(vector);
 
               if let Some(state) = get_block_state(bot, block_pos) {
-                blocks.push((state, (block_pos.x, block_pos.y, block_pos.z)));
+                blocks.push((state, (block_pos.x, block_pos.z)));
 
                 if !state.is_air() {
                   break;
@@ -120,7 +107,7 @@ impl MapRenderer {
       }
     }
 
-    self.generate_img(bot, &blocks, pos.x as i32, pos.z as i32)
+    self.generate_img(&blocks, pos.x as i32, pos.z as i32)
   }
 
   pub fn save_map(&self, nickname: String, full_path: Option<String>, base64_code: String) {
@@ -155,20 +142,6 @@ impl MapRenderer {
         }
       }
     }
-  }
-
-  fn get_biome(&self, bot: &Client, block_pos: BlockPos) -> Option<String> {
-    let biome = bot.world().read().get_biome(block_pos);
-
-    if let Some(b) = biome {
-      let identifier = bot.resolve_registry_name(&b);
-
-      if let Some(id) = identifier {
-        return Some(id.to_string());
-      }
-    }
-
-    None
   }
 
   fn get_rgb_code(&self, kind: BlockKind) -> (u8, u8, u8) {
@@ -444,42 +417,16 @@ impl MapRenderer {
     }
   }
 
-  fn generate_img(&self, bot: &Client, blocks: &Vec<(BlockState, (i32, i32, i32))>, center_x: i32, center_z: i32) -> String {
+  fn generate_img(&self, blocks: &Vec<(BlockState, (i32, i32))>, center_x: i32, center_z: i32) -> String {
     let width = 200;
     let height = 200;
 
     let mut img = ImageBuffer::new(width, height);
 
-    for (block, (x, y, z)) in blocks.iter() {
+    for (block, (x, z)) in blocks.iter() {
       let block_kind = BlockKind::from(*block);
 
-      let mut color = self.get_rgb_code(block_kind);
-
-      if block_kind == BlockKind::GrassBlock {
-        if let Some(biome) = self.get_biome(bot, BlockPos::new(*x, *y, *z)) {
-          let b = biome.as_str();
-
-          if b.contains("jungle") {
-            color = (30, 224, 0);
-          } else if b.contains("taiga") {
-            color = (19, 143, 0);
-          } else if b.contains("desert") {
-            color = (83, 193, 83);
-          } else if b.contains("savanna") {
-            color = (121, 193, 73);
-          } else if b.contains("warm_ocean") {
-            color = (57, 213, 57);
-          } else if b.contains("deep_ocean") || b.contains("deep_frozen_ocean") {
-            color = (64, 137, 16);
-          } else {
-            color = (0, 128, 0);
-          }
-
-          if b.contains("snowy") {
-            color = (10, 118, 10);
-          } 
-        }
-      }
+      let color = self.get_rgb_code(block_kind);
 
       let img_x = x - center_x + 100;
       let img_z = z - center_z + 100;

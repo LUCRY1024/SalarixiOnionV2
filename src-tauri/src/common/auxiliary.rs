@@ -84,7 +84,7 @@ pub fn get_block_state(bot: &Client, block_pos: BlockPos) -> Option<BlockState> 
 }
 
 // Функция получения средних координат ботов
-pub fn get_average_coordinates_of_bots(positions: Vec<Vec3>) -> (f64, f64, f64) {
+pub fn get_average_coordinates_of_bots(positions: &Vec<Vec3>) -> (f64, f64, f64) {
   let mut x_coords = vec![];
   let mut y_coords = vec![];
   let mut z_coords = vec![];
@@ -149,6 +149,22 @@ pub fn convert_inventory_slot_to_hotbar_slot(slot: usize) -> Option<u8> {
     43 => Some(7),
     44 => Some(8),
     _ => None
+  }
+}
+
+// Функция конвертации индекса hotbar-слота в индекс inventory-слота
+pub fn convert_hotbar_slot_to_inventory_slot(slot: u8) -> usize {
+  match slot {
+    0 => 36,
+    1 => 37,
+    2 => 38,
+    3 => 39,
+    4 => 40,
+    5 => 41,
+    6 => 42,
+    7 => 43,
+    8 => 44,
+    _ => 36
   }
 }
 
@@ -338,8 +354,6 @@ pub async fn inventory_swap_click(bot: &Client, source_slot: usize, target_slot:
 
 // Функция безопасного перемещения предмета
 pub async fn inventory_move_item(bot: &Client, kind: ItemKind, source_slot: usize, target_slot: usize) {
-  let nickname = bot.username();
-
   if let Some(menu) = get_inventory_menu(bot) {
     if let Some(item) = menu.slot(target_slot) {
       if item.kind() == kind {
@@ -358,11 +372,6 @@ pub async fn inventory_move_item(bot: &Client, kind: ItemKind, source_slot: usiz
   sleep(Duration::from_millis(50)).await;
 
   close_inventory(bot);
-
-  STATES.set_state(&nickname, "can_walking", true);
-  STATES.set_state(&nickname, "can_sprinting", true);
-  STATES.set_state(&nickname, "can_attacking", true);
-  STATES.set_state(&nickname, "can_interacting", true);
 }
 
 // Функция безопасного задания направления хотьбы для бота
@@ -544,6 +553,7 @@ pub fn this_is_solid_block(kind: ItemKind) -> bool {
 }
 
 // Структура EntityFilter
+#[derive(Clone)]
 pub struct EntityFilter {
   target: String,
   distance: f64,

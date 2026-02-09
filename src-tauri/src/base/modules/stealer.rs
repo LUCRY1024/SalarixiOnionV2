@@ -103,7 +103,7 @@ impl StealerModule {
     }
   }
 
-  async fn stealing(&self, bot: &Client, options: StealerOptions) {
+  async fn stealing(&self, bot: &Client, options: &StealerOptions) {
     let nickname = bot.username();
 
     loop {
@@ -140,7 +140,7 @@ impl StealerModule {
     }
   }
 
-  pub async fn enable(&self, bot: &Client, options: StealerOptions) {
+  pub async fn enable(&self, bot: &Client, options: &StealerOptions) {
     self.stealing(bot, options).await;
   } 
 

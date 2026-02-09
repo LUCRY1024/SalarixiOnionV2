@@ -22,7 +22,7 @@ impl InventoryModule {
     Self
   }
 
-  pub async fn interact(&self, bot: &Client, options: InventoryOptions) {
+  pub async fn interact(&self, bot: &Client, options: &InventoryOptions) {
     if let Some(s) = options.slot {
       let nickname = bot.username();
 

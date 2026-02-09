@@ -24,7 +24,7 @@ impl ActionModule {
     Self
   }
 
-  pub async fn jumping(&self, bot: &Client, options: ActionOptions) {
+  pub async fn jumping(&self, bot: &Client, options: &ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {
@@ -44,7 +44,7 @@ impl ActionModule {
     }
   } 
 
-  pub async fn shifting(&self, bot: &Client, options: ActionOptions) {
+  pub async fn shifting(&self, bot: &Client, options: &ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {
@@ -66,7 +66,7 @@ impl ActionModule {
     }
   } 
 
-  pub async fn waving(&self, bot: &Client, options: ActionOptions) {
+  pub async fn waving(&self, bot: &Client, options: &ActionOptions) {
     if options.use_impulsiveness {
       loop {
         if options.use_sync {

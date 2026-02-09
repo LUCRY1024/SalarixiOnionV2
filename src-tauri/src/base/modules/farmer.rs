@@ -1,12 +1,12 @@
 use azalea::{Vec3, prelude::*};
 use azalea::core::position::BlockPos;
-use azalea::registry::builtin::ItemKind;
+use azalea::registry::builtin::{BlockKind, ItemKind};
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::base::*;
-use crate::common::{get_block_state, take_item};
+use crate::common::{get_block_state, get_inventory_menu, take_item};
 use crate::tools::*;
 
 
@@ -34,19 +34,19 @@ impl FarmerModule {
   async fn auto_tool(&self, bot: &Client) {
     let mut tools = vec![];
 
-    let menu = bot.menu();
-
-    for (slot, item) in menu.slots().iter().enumerate() {
-      if !item.is_empty() {
-        match item.kind() {
-          ItemKind::WoodenHoe => { tools.push(Tool { slot: Some(slot), priority: 0 }); },
-          ItemKind::GoldenHoe => { tools.push(Tool { slot: Some(slot), priority: 1 }); },
-          ItemKind::StoneHoe => { tools.push(Tool { slot: Some(slot), priority: 2 }); },
-          ItemKind::CopperHoe => { tools.push(Tool { slot: Some(slot), priority: 3 }); },
-          ItemKind::IronHoe => { tools.push(Tool { slot: Some(slot), priority: 4 }); },
-          ItemKind::DiamondHoe => { tools.push(Tool { slot: Some(slot), priority: 5 }); },
-          ItemKind::NetheriteHoe => { tools.push(Tool { slot: Some(slot), priority: 6 }); },
-          _ => {}
+    if let Some(menu) = get_inventory_menu(bot) {
+      for (slot, item) in menu.slots().iter().enumerate() {
+        if !item.is_empty() {
+          match item.kind() {
+            ItemKind::WoodenHoe => { tools.push(Tool { slot: Some(slot), priority: 0 }); },
+            ItemKind::GoldenHoe => { tools.push(Tool { slot: Some(slot), priority: 1 }); },
+            ItemKind::StoneHoe => { tools.push(Tool { slot: Some(slot), priority: 2 }); },
+            ItemKind::CopperHoe => { tools.push(Tool { slot: Some(slot), priority: 3 }); },
+            ItemKind::IronHoe => { tools.push(Tool { slot: Some(slot), priority: 4 }); },
+            ItemKind::DiamondHoe => { tools.push(Tool { slot: Some(slot), priority: 5 }); },
+            ItemKind::NetheriteHoe => { tools.push(Tool { slot: Some(slot), priority: 6 }); },
+            _ => {}
+          }
         }
       }
     }
@@ -71,17 +71,17 @@ impl FarmerModule {
     ].contains(&id);
   }
 
-  fn this_is_plant(&self, id: u16) -> bool {
+  fn this_is_plant(&self, kind: BlockKind) -> bool {
     return vec![
-      10465, 10457, 14609,
-      14610, 10469, 10463,
-      5112, 5110, 10464,
-      5117, 14612, 10472
-    ].contains(&id);
+      BlockKind::Potatoes,
+      BlockKind::Carrots,
+      BlockKind::Wheat,
+      BlockKind::Beetroots
+    ].contains(&kind);
   }
 
-  fn this_is_garden_bed_without_plant(&self, bot: &Client, id: u16, block_pos: BlockPos) -> bool {
-    if id == 5125 || id == 5118 {
+  fn this_is_farmland_without_plant(&self, bot: &Client, kind: BlockKind, block_pos: BlockPos) -> bool {
+    if kind == BlockKind::Farmland {
       let block_above = BlockPos::new(
         block_pos.x,
         block_pos.y + 1,
@@ -101,11 +101,13 @@ impl FarmerModule {
   async fn fertilize_plant(&self, bot: &Client, mode: &String) {
     let mut ferilizer_slot = None;
 
-    for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if !item.is_empty() {
-        if item.kind() == ItemKind::BoneMeal {
-          ferilizer_slot = Some(slot);
-          break;
+    if let Some(menu) = get_inventory_menu(bot) {
+      for (slot, item) in menu.slots().iter().enumerate() {
+        if !item.is_empty() {
+          if item.kind() == ItemKind::BoneMeal {
+            ferilizer_slot = Some(slot);
+            break;
+          }
         }
       }
     }
@@ -141,14 +143,16 @@ impl FarmerModule {
   async fn take_plant(&self, bot: &Client) -> bool {
     let mut plant_slot = None;
 
-    for (slot, item) in bot.menu().slots().iter().enumerate() {
-      if !item.is_empty() && plant_slot.is_none() {
-        match item.kind() {
-          ItemKind::Potato => { plant_slot = Some(slot) },
-          ItemKind::Carrot => { plant_slot = Some(slot) },
-          ItemKind::BeetrootSeeds => { plant_slot = Some(slot) },
-          ItemKind::WheatSeeds => { plant_slot = Some(slot) },
-          _ => {}
+    if let Some(menu) = get_inventory_menu(bot) {
+      for (slot, item) in menu.slots().iter().enumerate() {
+        if !item.is_empty() && plant_slot.is_none() {
+          match item.kind() {
+            ItemKind::Potato => { plant_slot = Some(slot) },
+            ItemKind::Carrot => { plant_slot = Some(slot) },
+            ItemKind::BeetrootSeeds => { plant_slot = Some(slot) },
+            ItemKind::WheatSeeds => { plant_slot = Some(slot) },
+            _ => {}
+          }
         }
       }
     }
@@ -176,19 +180,26 @@ impl FarmerModule {
       self.auto_tool(bot).await;
       sleep(Duration::from_millis(50)).await;
 
-      if state.id() == 14613 || state.id() == 10 {
-        bot.start_use_item();
-      } else {
+      let kind = BlockKind::from(state);
+
+      if kind == BlockKind::CoarseDirt || kind == BlockKind::RootedDirt {
         bot.start_use_item();
         sleep(Duration::from_millis(self.generate_delay(mode))).await;
+        bot.start_use_item();
+      } else {
         bot.start_use_item();
       }
     }
   }
 
-  fn block_can_plowed(&self, bot: &Client, id: u16, block_pos: BlockPos) -> bool {
+  fn block_can_plowed(&self, bot: &Client, kind: BlockKind, block_pos: BlockPos) -> bool {
     if let Some(state) = get_block_state(bot, BlockPos::new(block_pos.x, block_pos.y + 1, block_pos.z)) {
-      return vec![14613, 27719, 10, 11].contains(&id) && state.is_air();
+      return vec![
+        BlockKind::Dirt, 
+        BlockKind::DirtPath, 
+        BlockKind::RootedDirt, 
+        BlockKind::CoarseDirt
+      ].contains(&kind) && state.is_air();
     }
 
     false
@@ -204,7 +215,9 @@ impl FarmerModule {
         STATES.set_mutual_states(&nickname, "looking", true);
         STATES.set_mutual_states(&nickname, "interacting", true);
 
-        if self.this_is_garden_bed_without_plant(bot, state.id(), block_pos) {
+        let kind = BlockKind::from(state);
+
+        if self.this_is_farmland_without_plant(bot, kind, block_pos) {
           self.look_at_block(bot, block_pos).await;
 
           if options.mode.as_str() != "ultra" {
@@ -217,7 +230,7 @@ impl FarmerModule {
             sleep(Duration::from_millis(self.generate_delay(&options.mode))).await;
           }
         } else {
-          if self.this_is_plant(state.id()) {
+          if self.this_is_plant(kind) {
             self.look_at_block(bot, block_pos).await;
 
             sleep(Duration::from_millis(self.generate_delay(&options.mode))).await;
@@ -244,22 +257,22 @@ impl FarmerModule {
               sleep(Duration::from_millis(self.generate_delay(&options.mode))).await;
             }
           } else {
-            if self.block_can_plowed(bot, state.id(), block_pos) {
+            if self.block_can_plowed(bot, kind, block_pos) {
               self.look_at_block(bot, block_pos).await;
               self.plow_block(bot, block_pos, &options.mode).await;
             }
           }
         }
 
-        STATES.set_mutual_states(&nickname, "looking", false);
-        STATES.set_mutual_states(&nickname, "interacting", false);
         STATES.set_state(&nickname, "can_eating", true);
         STATES.set_state(&nickname, "can_drinking", true);
+        STATES.set_mutual_states(&nickname, "looking", false);
+        STATES.set_mutual_states(&nickname, "interacting", false);
       }
     }
   }
 
-  async fn farmer(&self, bot: &Client, options: FarmerOptions) {
+  async fn farmer(&self, bot: &Client, options: &FarmerOptions) {
     loop {
       for y in -1..=1 {
         let pos = bot.position();
@@ -287,13 +300,15 @@ impl FarmerModule {
     }
   }
 
-  pub async fn enable(&self, bot: &Client, options: FarmerOptions) {
+  pub async fn enable(&self, bot: &Client, options: &FarmerOptions) {
     self.farmer(bot, options).await;
   } 
 
   pub fn stop(&self, nickname: &String) {
     kill_task(&nickname, "farmer");
 
+    STATES.set_state(&nickname, "can_eating", true);
+    STATES.set_state(&nickname, "can_drinking", true);
     STATES.set_mutual_states(&nickname, "looking", false);
     STATES.set_mutual_states(&nickname, "interacting", false);
   }

@@ -43,10 +43,10 @@ impl FlightModule {
     Self
   }
 
-  fn create_adaptive_config(&self, anti_cheat: String) -> FlightConfig {
+  fn create_adaptive_config(&self, anti_cheat: &str) -> FlightConfig {
     let config;
 
-    match anti_cheat.as_str() {
+    match anti_cheat {
       "vulcan" => {
         config = FlightConfig {
           min_delay: 2,
@@ -104,16 +104,16 @@ impl FlightModule {
     }
   }
 
-  pub async fn vanilla_flight(&self, bot: &Client, options: FlightOptions) {
+  pub async fn vanilla_flight(&self, bot: &Client, options: &FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      self.create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat.as_str())
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
         max_delay: options.max_delay.unwrap_or(8),
         min_change_y: options.min_change_y.unwrap_or(0.05),
         max_change_y: options.max_change_y.unwrap_or(0.08),
-        use_ground_spoof: if let Some(v) = options.use_ground_spoof { v.as_str() == "true" } else { true },
+        use_ground_spoof: if let Some(v) = &options.use_ground_spoof { v.as_str() == "true" } else { true },
         use_jitter: false
       }
     };
@@ -148,16 +148,16 @@ impl FlightModule {
     }
   }
 
-  pub async fn jump_flight(&self, bot: &Client, options: FlightOptions) {
+  pub async fn jump_flight(&self, bot: &Client, options: &FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      self.create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat.as_str())
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
         max_delay: options.max_delay.unwrap_or(7),
         min_change_y: options.min_change_y.unwrap_or(0.006),
         max_change_y: options.max_change_y.unwrap_or(0.008),
-        use_ground_spoof: if let Some(v) = options.use_ground_spoof { v.as_str() == "true" } else { true },
+        use_ground_spoof: if let Some(v) = &options.use_ground_spoof { v.as_str() == "true" } else { true },
         use_jitter: true
       }
     };
@@ -209,16 +209,16 @@ impl FlightModule {
     }
   }
 
-  pub async fn teleport_flight(&self, bot: &Client, options: FlightOptions) {
+  pub async fn teleport_flight(&self, bot: &Client, options: &FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      self.create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat.as_str())
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(3),
         max_delay: options.max_delay.unwrap_or(8),
         min_change_y: options.min_change_y.unwrap_or(0.08),
         max_change_y: options.max_change_y.unwrap_or(0.09),
-        use_ground_spoof: if let Some(v) = options.use_ground_spoof { v.as_str() == "true" } else { true },
+        use_ground_spoof: if let Some(v) = &options.use_ground_spoof { v.as_str() == "true" } else { true },
         use_jitter: false
       }
     };
@@ -261,16 +261,16 @@ impl FlightModule {
     }
   }
 
-  pub async fn bug_flight(&self, bot: &Client, options: FlightOptions) {
+  pub async fn bug_flight(&self, bot: &Client, options: &FlightOptions) {
     let config = if options.settings.as_str() == "adaptive" {
-      self.create_adaptive_config(options.anti_cheat)
+      self.create_adaptive_config(options.anti_cheat.as_str())
     } else {
       FlightConfig {
         min_delay: options.min_delay.unwrap_or(4),
         max_delay: options.max_delay.unwrap_or(8),
         min_change_y: options.min_change_y.unwrap_or(0.02),
         max_change_y: options.max_change_y.unwrap_or(0.05),
-        use_ground_spoof: if let Some(v) = options.use_ground_spoof { v.as_str() == "true" } else { true },
+        use_ground_spoof: if let Some(v) = &options.use_ground_spoof { v.as_str() == "true" } else { true },
         use_jitter: true
       }
     };
@@ -317,7 +317,7 @@ impl FlightModule {
     }
   }
 
-  pub async fn enable(&self, bot: &Client, options: FlightOptions) {
+  pub async fn enable(&self, bot: &Client, options: &FlightOptions) {
     match options.mode.as_str() {
       "vanilla" => { self.vanilla_flight(bot, options).await; },
       "jump-fly" => { self.jump_flight(bot, options).await; },

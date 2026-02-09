@@ -238,10 +238,10 @@ export class MonitoringManager {
     const steveIconPath = document.getElementById('steve-img') as HTMLImageElement;
 
     const groupNameExamples = [
-      'KillauraGroup', 'bow_aim_group', 'AutoFarm', 
-      'AFK', 'TravelersGroup', 'miner_group', 
-      'ShulkerStealer', 'FarmerGroup', 'chat_spamming', 
-      'CheatTester', 'chest_stealer'
+      'killaura', 'bow_aim', 'AutoFarm', 
+      'AFK', 'Travelers', 'miner', 
+      'Stealer', 'Farmer', 'Spamming', 
+      'PvE', 'PvP', 'afk_group'
     ];
     
     const groupNameExample = groupNameExamples[Math.floor(Math.random() * groupNameExamples.length)];
@@ -492,11 +492,14 @@ export class MonitoringManager {
 
         if (base64code) {
           const path = document.getElementById(`save-map-path-${nickname}`) as HTMLInputElement;
+
           await invoke('save_map', { 
             nickname: nickname, 
             path: path.value, 
             base64code: base64code 
           });
+        } else {
+          log(`Ошибка мониторинга (save-map): Base64 code not found`, 'error');
         }
       } catch (error) {
         log(`Ошибка мониторинга (save-map): ${error}`, 'error');
@@ -555,16 +558,12 @@ export class MonitoringManager {
     const sendMsg = async (input_id: string) => {
       const message = document.getElementById(input_id) as HTMLInputElement;
 
-      const result = await invoke('send_message', { 
+      await invoke('send_message', { 
         nickname: nickname,
         message: message.value
-      }) as Array<string>;
+      });
 
-      if (result[0] !== 'error') {
-        message.value = '';
-      }
-
-      log(result[1], `${result[0]}`);
+      message.value = '';
     }
 
     this.addTempListener(`chat-${nickname}`, 'keydown', async (e: Event) => (e as KeyboardEvent).key === 'Enter' ? await sendMsg(`this-chat-message-${nickname}`) : null);
@@ -604,7 +603,7 @@ export class MonitoringManager {
           <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px;">
             <p class="signature">${nickname}:</p>
 
-            <input type="text" class="glass-input" id="send-captcha-code-${nickname}" placeholder="Введите код" style="height: 28px; width: 250px;">
+            <input type="text" class="glass-input" id="send-captcha-code-${nickname}" placeholder="Введите код с капчи" style="height: 28px; width: 250px;">
           </div>
         `;
 

@@ -164,7 +164,7 @@ impl ChatModule {
     result
   } 
 
-  pub async fn message(&self, bot: &Client, options: ChatOptions) -> anyhow::Result<()> {
+  pub async fn message(&self, bot: &Client, options: &ChatOptions) -> anyhow::Result<()> {
     let mut text = options.message.clone();
 
     if options.use_text_mutation {
@@ -189,7 +189,7 @@ impl ChatModule {
     Ok(())
   }
 
-  pub async fn spamming(&self, bot: &Client, options: ChatOptions) {
+  pub async fn spamming(&self, bot: &Client, options: &ChatOptions) {
     let mut latest_text = String::new();
 
     loop {

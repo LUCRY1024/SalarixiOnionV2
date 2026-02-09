@@ -208,7 +208,7 @@ impl KillauraModule {
     });
   }
 
-  async fn moderate_killaura(&'static self, bot: &Client, options: KillauraOptions) {
+  async fn moderate_killaura(&'static self, bot: &Client, options: &KillauraOptions) {
     let config = if options.settings.as_str() == "adaptive" {
       self.create_adaptive_config(options.target.clone(), options.chase_distance, options.min_distance_to_target)
     } else {
@@ -255,10 +255,15 @@ impl KillauraModule {
 
           if options.use_critical {
             bot.jump();
-            sleep(Duration::from_millis(randuint(300, 400))).await;
+
+            sleep(Duration::from_millis(randuint(500, 600))).await;
+
+            if let Some(e) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
+              bot.attack(e);
+            }
+          } else {
+            bot.attack(entity);
           }
-          
-          bot.attack(entity);
 
           STATES.set_mutual_states(&nickname, "attacking", false);
         }
@@ -268,7 +273,7 @@ impl KillauraModule {
     }
   }
 
-  async fn aggressive_killaura(&'static self, bot: &Client, options: KillauraOptions) {
+  async fn aggressive_killaura(&'static self, bot: &Client, options: &KillauraOptions) {
     let config = if options.settings.as_str() == "adaptive" {
       self.create_adaptive_config(options.target.clone(), options.chase_distance, options.min_distance_to_target)
     } else {
@@ -294,7 +299,7 @@ impl KillauraModule {
 
     loop {
       if STATES.get_state(&nickname, "can_attacking") && !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") {
-        if let Some(_) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
+        if let Some(entity) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
           STATES.set_mutual_states(&nickname, "attacking", true);
           
           if options.use_auto_weapon {
@@ -313,22 +318,24 @@ impl KillauraModule {
 
           if options.use_critical {
             bot.jump();
-            sleep(Duration::from_millis(randuint(300, 400))).await;
-          }
-          
-          if let Some(e) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
-            bot.attack(e);
-          }
-        }
+            sleep(Duration::from_millis(randuint(500, 600))).await;
 
-        STATES.set_mutual_states(&nickname, "attacking", false);
+            if let Some(e) = get_nearest_entity(&bot, EntityFilter::new(&bot, &config.target, config.distance)) {
+              bot.attack(e);
+            }
+          } else {
+            bot.attack(entity);
+          }
+
+          STATES.set_mutual_states(&nickname, "attacking", false);
+        }
       }
 
       sleep(Duration::from_millis(config.delay)).await;
     }
   }
 
-  pub async fn enable(&'static self, bot: &Client, options: KillauraOptions) {
+  pub async fn enable(&'static self, bot: &Client, options: &KillauraOptions) {
     match options.mode.as_str() {
       "moderate" => { self.moderate_killaura(bot, options).await; },
       "aggressive" => { self.aggressive_killaura(bot, options).await; },

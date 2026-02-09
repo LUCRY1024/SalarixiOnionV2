@@ -28,7 +28,7 @@ impl MovementModule {
     Self
   }
 
-  pub async fn enable(&self, bot: &Client, options: MovementOptions) {
+  pub async fn enable(&self, bot: &Client, options: &MovementOptions) {
     match options.mode.as_str() {
       "default" => {
         match options.use_impulsiveness {

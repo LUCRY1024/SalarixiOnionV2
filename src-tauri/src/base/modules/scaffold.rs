@@ -6,7 +6,7 @@ use tokio::time::sleep;
 
 use crate::base::*;
 use crate::tools::*;
-use crate::common::{convert_inventory_slot_to_hotbar_slot, get_block_state, get_bot_physics, get_inventory_menu, get_selected_hotbar_slot, go, swing_arm, take_item, this_is_solid_block};
+use crate::common::{convert_hotbar_slot_to_inventory_slot, convert_inventory_slot_to_hotbar_slot, get_block_state, get_bot_physics, get_inventory_menu, get_selected_hotbar_slot, go, swing_arm, take_item, this_is_solid_block};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,40 +27,44 @@ impl ScaffoldModule {
   }
 
   async fn take_block(&self, bot: &Client) -> bool {
-    let mut block_slot = None;
-
     if let Some(menu) = get_inventory_menu(bot) {
+      if let Some(item) = menu.slot(convert_hotbar_slot_to_inventory_slot(get_selected_hotbar_slot(bot))) {
+        if this_is_solid_block(item.kind()) {
+          return true;
+        }
+      }
+
+      let mut block_slot = None;
+
       for (slot, item) in menu.slots().iter().enumerate() {
-        if !item.is_empty() {
-          if this_is_solid_block(item.kind()) {
-            for s in 36..=44 {
-              if let Some(i) = menu.slot(s) {
-                if this_is_solid_block(i.kind()) {
-                  if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(s) {
-                    if get_selected_hotbar_slot(bot) == hotbar_slot {
-                      return true;
-                    }
+        if this_is_solid_block(item.kind()) {
+          for s in 36..=44 {
+            if let Some(i) = menu.slot(s) {
+              if this_is_solid_block(i.kind()) {
+                if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(s) {
+                  if get_selected_hotbar_slot(bot) == hotbar_slot {
+                    return true;
                   }
                 }
               }
             }
-            
-            if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
-              if get_selected_hotbar_slot(bot) == hotbar_slot {
-                return true;
-              }
-            }
-
-            block_slot = Some(slot);
-            break;
           }
+          
+          if let Some(hotbar_slot) = convert_inventory_slot_to_hotbar_slot(slot) {
+            if get_selected_hotbar_slot(bot) == hotbar_slot {
+              return true;
+            }
+          }
+
+          block_slot = Some(slot);
+          break;
         }
       }
-    }
 
-    if let Some(slot) = block_slot {
-      take_item(bot, slot).await;
-      return true;
+      if let Some(slot) = block_slot {
+        take_item(bot, slot).await;
+        return true;
+      }
     }
 
     false
@@ -84,13 +88,17 @@ impl ScaffoldModule {
   fn go_back(&self, bot: Client) {
     tokio::spawn(async move {
       loop {
+        if !TASKS.get_task_activity(&bot.username(), "scaffold") {
+          break;
+        }
+
         go(&bot, WalkDirection::Backward);
         sleep(Duration::from_millis(50)).await;
       }
     });
   }
 
-  async fn noob_bridge_scaffold(&self, bot: &Client, options: ScaffoldOptions) {
+  async fn noob_bridge_scaffold(&self, bot: &Client, options: &ScaffoldOptions) {
     loop { 
       if !bot.crouching() {
         bot.set_crouching(true);
@@ -125,7 +133,7 @@ impl ScaffoldModule {
     }    
   }
 
-  async fn ninja_bridge_scaffold(&self, bot: &Client, options: ScaffoldOptions) {
+  async fn ninja_bridge_scaffold(&self, bot: &Client, options: &ScaffoldOptions) {
     loop { 
       if self.take_block(bot).await { 
         self.direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
@@ -162,7 +170,7 @@ impl ScaffoldModule {
     }    
   }
 
-  async fn god_bridge_scaffold(&self, bot: &Client, options: ScaffoldOptions) {
+  async fn god_bridge_scaffold(&self, bot: &Client, options: &ScaffoldOptions) {
     loop { 
       if self.take_block(bot).await { 
         self.direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
@@ -189,7 +197,7 @@ impl ScaffoldModule {
     }    
   }
 
-  async fn jump_bridge_scaffold(&self, bot: &Client, options: ScaffoldOptions) {
+  async fn jump_bridge_scaffold(&self, bot: &Client, options: &ScaffoldOptions) {
     loop { 
       if self.take_block(bot).await { 
         self.direct_gaze(bot, options.min_gaze_degree_x, options.max_gaze_degree_x);
@@ -228,7 +236,7 @@ impl ScaffoldModule {
     }    
   }
 
-  pub async fn enable(&self, bot: &Client, options: ScaffoldOptions) {
+  pub async fn enable(&self, bot: &Client, options: &ScaffoldOptions) {
     self.go_back(bot.clone());
 
     match options.mode.as_str() {
@@ -241,7 +249,15 @@ impl ScaffoldModule {
   } 
 
   pub fn stop(&self, bot: &Client) {
-    kill_task(&bot.username(), "scaffold");
+    let nickname = bot.username();
+
+    kill_task(&nickname, "scaffold");
+
     bot.set_crouching(false);
+    bot.walk(WalkDirection::None);
+
+    STATES.set_mutual_states(&nickname, "walking", false);
+    STATES.set_mutual_states(&nickname, "looking", false);
+    STATES.set_mutual_states(&nickname, "interacting", false);
   }
 }

@@ -165,13 +165,13 @@ impl MinerModule {
     territory
   }
 
-  async fn default_mine(&self, bot: &Client, options: MinerOptions) {
+  async fn default_mine(&self, bot: &Client, options: &MinerOptions) {
     bot.left_click_mine(true);
     bot.walk(WalkDirection::Forward);
     bot.set_direction(options.direction_x.unwrap_or(0.0), 40.0 + randfloat(-3.5, 3.5) as f32);
   }
 
-  async fn extended_mine(&self, bot: &Client, options: MinerOptions) {
+  async fn extended_mine(&self, bot: &Client, options: &MinerOptions) {
     loop {
       let position = bot.position();
 
@@ -264,7 +264,7 @@ impl MinerModule {
     }
   } 
 
-  pub async fn enable(&self, bot: &Client, options: MinerOptions) {
+  pub async fn enable(&self, bot: &Client, options: &MinerOptions) {
     match options.mode.as_str() {
       "default" => { self.default_mine(bot, options).await; },
       "extended" => { self.extended_mine(bot, options).await; }

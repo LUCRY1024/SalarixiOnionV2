@@ -8,8 +8,6 @@ use azalea::protocol::connect::Proxy;
 use azalea_viaversion::ViaVersionPlugin;
 use std::collections::HashMap;
 use std::net::SocketAddr;  
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
 use std::time::Duration;  
 use std::thread;
 use once_cell::sync::Lazy;
@@ -26,16 +24,9 @@ use crate::emit::*;
 use crate::webhook::send_webhook;
 
 
-pub static ACTIVE: AtomicBool = AtomicBool::new(false);
-
 pub static FLOW_MANAGER: Lazy<Arc<RwLock<Option<Arc<RwLock<FlowManager>>>>>> = Lazy::new(|| { Arc::new(RwLock::new(None)) });
 pub static MODULE_MANAGER: Lazy<Arc<ModuleManager>> = Lazy::new(|| { Arc::new(ModuleManager::new()) });
 pub static PLUGIN_MANAGER: Lazy<Arc<PluginManager>> = Lazy::new(|| { Arc::new(PluginManager::new()) });
-
-// Функция получения активности
-pub fn get_active() -> bool {
-  ACTIVE.load(Ordering::Relaxed)
-}
 
 // Функция инициализации FlowManager
 pub fn init_flow_manager(manager: FlowManager) {
@@ -249,7 +240,6 @@ impl FlowManager {
     STATES.clear();
     TASKS.clear();
 
-    ACTIVE.store(true, Ordering::SeqCst);
     self.active = true;
 
     if options.use_webhook {
@@ -379,11 +369,10 @@ impl FlowManager {
       return ("warning".to_string(), format!("Нет активных ботов для остановки"));
     }
 
-    if let Some(swarm) = self.swarm.clone() {
+    if let Some(swarm) = &self.swarm {
       swarm.ecs_lock.lock().write_message(AppExit::Success);
     }
 
-    ACTIVE.store(false, Ordering::Relaxed);
     self.active = false;
     self.swarm.take();
     self.bots.clear();
@@ -400,48 +389,46 @@ impl FlowManager {
     ("info".to_string(), format!("Остановка ботов завершена"))
   }
 
-  pub fn send_message(&self, nickname: &String, message: &String) -> Option<String> {
-    for (name, bot) in self.bots.iter() {
-      if *name == *nickname {
-        bot.chat(message);
-        return Some(format!("Бот {} успешно отправил сообщение '{}' в чат", nickname, message));
-      }
-    }
-
-    None
+  pub fn send_message(&self, nickname: &String, message: &String) {
+    self.bots.get(nickname).map(|bot| {
+      bot.chat(message);
+    });
   }
 
   pub fn reset_bot(&self, nickname: &String) -> Option<String> {
-    for (name, _) in self.bots.iter() {
-      if *name == *nickname {
-        TASKS.reset(nickname);
-        STATES.reset(nickname);
+    let mut msg = None;
 
-        emit_message("Система", format!("Все задачи и состояния бота {} сброшены", nickname));
-        return Some(format!("Все задачи и состояния бота {} сброшены", nickname));
-      }
-    }
+    self.bots.get(nickname).map(|bot| {
+      TASKS.reset(nickname);
+      STATES.reset(nickname);
 
-    None
+      bot.set_crouching(false);
+      bot.set_jumping(false);
+
+      emit_message("Система", format!("Все задачи и состояния бота {} сброшены", nickname));
+      msg = Some(format!("Все задачи и состояния бота {} сброшены", nickname));
+    }); 
+
+    msg
   }
 
   pub fn disconnect_bot(&self, nickname: &String) -> Option<String> {
-    for (name, bot) in self.bots.iter() {
-      if *name == *nickname {
-        bot.disconnect();
-        emit_message("Система", format!("Бот {} отключился", nickname));
-        return Some(format!("Бот {} отключился", nickname));
-      }
-    }
+    let mut msg = None;
 
-    None
+    self.bots.get(nickname).map(|bot| {
+      bot.disconnect();
+      emit_message("Система", format!("Бот {} отключился", nickname));
+      msg = Some(format!("Бот {} отключился", nickname));
+    }); 
+
+    msg
   }
 }
 
 // Структура ModuleManager
 pub struct ModuleManager {
   chat: ChatModule,
-  actions: ActionModule,
+  action: ActionModule,
   inventory: InventoryModule,
   movement: MovementModule,
   anti_afk: AntiAfkModule,
@@ -459,7 +446,7 @@ impl ModuleManager {
   pub fn new() -> Self {
     Self {
       chat: ChatModule::new(),
-      actions: ActionModule::new(),
+      action: ActionModule::new(),
       inventory: InventoryModule::new(),
       movement: MovementModule::new(),
       anti_afk: AntiAfkModule::new(),
@@ -494,26 +481,26 @@ impl ModuleManager {
             "chat" => {
               let options: ChatOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();
+              let mode = options.clone().mode;
 
-              if options.mode.as_str() == "spamming" {
+              if mode.as_str() == "spamming" {
                 self.chat.stop(&nickname);
               }
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  match options_task.mode.as_str() {
-                    "message" => { let _ = self.chat.message(&bot, options_task).await; },
-                    "spamming" => { let _ = self.chat.spamming(&bot, options_task).await; },
+                  match options.mode.as_str() {
+                    "message" => { let _ = self.chat.message(&bot, &options).await; },
+                    "spamming" => { let _ = self.chat.spamming(&bot, &options).await; },
                     _ => {}
                   }
                 });
 
-                if options.mode.as_str() == "spamming" {
+                if mode.as_str() == "spamming" {
                   run_task(&nickname, "spamming", task);
                 }
               } else {
-                if options.mode.as_str() == "spamming" {
+                if mode.as_str() == "spamming" {
                   self.chat.stop(&nickname);
                 }
               }
@@ -521,42 +508,40 @@ impl ModuleManager {
             "action" => {
               let options: ActionOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();
+              let action = options.action.clone();
 
-              self.actions.stop(&bot, &options.action);
+              self.action.stop(&bot, action.as_str());
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  match options_task.action.as_str() {
-                    "jumping" => { self.actions.jumping(&bot, options_task).await; },
-                    "shifting" => { self.actions.shifting(&bot, options_task).await; },
-                    "waving" => { self.actions.waving(&bot, options_task).await; },
+                  match options.action.as_str() {
+                    "jumping" => { self.action.jumping(&bot, &options).await; },
+                    "shifting" => { self.action.shifting(&bot, &options).await; },
+                    "waving" => { self.action.waving(&bot, &options).await; },
                     _ => {}
                   }
                 });
 
-                run_task(&nickname, &options.action, task);
+                run_task(&nickname, action.as_str(), task);
               } else {
-                self.actions.stop(&bot, &options.action);
+                self.action.stop(&bot, action.as_str());
               }
             },
             "inventory" => {
               let options: InventoryOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
               tokio::spawn(async move {
-                self.inventory.interact(&bot, options).await;
+                self.inventory.interact(&bot, &options).await;
               });
             },
             "movement" => {
               let options: MovementOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.movement.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.movement.enable(&bot, options_task).await;
+                  self.movement.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "movement", task);
@@ -567,13 +552,11 @@ impl ModuleManager {
             "anti-afk" => {
               let options: AntiAfkOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone(); 
-
               self.anti_afk.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.anti_afk.enable(&bot, options_task).await;
+                  self.anti_afk.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "anti-afk", task);
@@ -584,13 +567,11 @@ impl ModuleManager {
             "flight" => {
               let options: FlightOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.flight.stop(&nickname);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.flight.enable(&bot, options_task).await;
+                  self.flight.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "flight", task);
@@ -601,13 +582,11 @@ impl ModuleManager {
             "killaura" => {
               let options: KillauraOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.killaura.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.killaura.enable(&bot, options_task).await;
+                  self.killaura.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "killaura", task);
@@ -617,14 +596,12 @@ impl ModuleManager {
             },
             "scaffold" => {
               let options: ScaffoldOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
-
-              let options_task = options.clone();
-
+              
               self.scaffold.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.scaffold.enable(&bot, options_task).await;
+                  self.scaffold.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "scaffold", task);
@@ -635,13 +612,11 @@ impl ModuleManager {
             "anti-fall" => {
               let options: AntiFallOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();
-
               self.anti_fall.stop(&nickname);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.anti_fall.enable(&bot, options_task).await;
+                  self.anti_fall.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "anti-fall", task);
@@ -652,13 +627,11 @@ impl ModuleManager {
             "bow-aim" => {
               let options: BowAimOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.bow_aim.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.bow_aim.enable(&bot, options_task).await;
+                  self.bow_aim.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "bow-aim", task);
@@ -669,13 +642,11 @@ impl ModuleManager {
             "stealer" => {
               let options: StealerOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.stealer.stop(&nickname);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.stealer.enable(&bot, options_task).await;
+                  self.stealer.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "stealer", task);
@@ -686,13 +657,11 @@ impl ModuleManager {
             "miner" => {
               let options: MinerOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
  
-              let options_task = options.clone();  
-
               self.miner.stop(&bot);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.miner.enable(&bot, options_task).await;
+                  self.miner.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "miner", task);
@@ -703,13 +672,11 @@ impl ModuleManager {
             "farmer" => {
               let options: FarmerOptions = serde_json::from_value(current_options).map_err(|e| format!("Ошибка парсинга опций: {}", e)).unwrap();
 
-              let options_task = options.clone();  
-
               self.farmer.stop(&nickname);
 
               if options.state {
                 let task = tokio::spawn(async move {
-                  self.farmer.enable(&bot, options_task).await;
+                  self.farmer.enable(&bot, &options).await;
                 });
 
                 run_task(&nickname, "farmer", task);

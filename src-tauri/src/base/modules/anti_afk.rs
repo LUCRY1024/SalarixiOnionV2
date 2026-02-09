@@ -27,7 +27,7 @@ impl AntiAfkModule {
     Self
   }
 
-  async fn minimal(&self, bot: &Client, options: AntiAfkOptions) {
+  async fn minimal(&self, bot: &Client, options: &AntiAfkOptions) {
     let min_delay = if let Some(delay) = options.min_delay { delay } else { 2000 };
     let max_delay = if let Some(delay) = options.max_delay { delay } else { 4000 };
 
@@ -48,7 +48,7 @@ impl AntiAfkModule {
     }
   }
 
-  async fn normal(&self, bot: &Client, options: AntiAfkOptions) {
+  async fn normal(&self, bot: &Client, options: &AntiAfkOptions) {
     let min_delay = if let Some(delay) = options.min_delay { delay } else { 2000 };
     let max_delay = if let Some(delay) = options.max_delay { delay } else { 4000 };
 
@@ -74,7 +74,7 @@ impl AntiAfkModule {
     }
   }
 
-  async fn advanced(&self, bot: &Client, options: AntiAfkOptions) {
+  async fn advanced(&self, bot: &Client, options: &AntiAfkOptions) {
     let min_delay = if let Some(delay) = options.min_delay { delay } else { 1000 };
     let max_delay = if let Some(delay) = options.max_delay { delay } else { 1800 };
 
@@ -105,7 +105,7 @@ impl AntiAfkModule {
     }
   }
 
-  pub async fn enable(&self, bot: &Client, options: AntiAfkOptions) {
+  pub async fn enable(&self, bot: &Client, options: &AntiAfkOptions) {
     match options.mode.as_str() {
       "minimal" => { self.minimal(bot, options).await; },
       "normal" => { self.normal(bot, options).await; },

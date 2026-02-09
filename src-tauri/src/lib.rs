@@ -51,21 +51,17 @@ fn get_bot_profiles() -> Option<std::collections::HashMap<String, Profile>> {
 
 // Функция отправки сообщения от бота
 #[tauri::command]
-fn send_message(nickname: String, message: String) -> (String, String) {
+fn send_message(nickname: String, message: String) {
   if let Some(arc) = get_flow_manager() {
-    if let Some(msg) = arc.write().send_message(&nickname, &message) {
-      return ("info".to_string(), msg);
-    }
+    arc.read().send_message(&nickname, &message);
   }
-
-  ("error".to_string(), format!("Бот {} не смог отправить сообщение '{}' в чат", nickname, message))
 }
 
 // Функция сброса всех задач и состояний бота
 #[tauri::command]
 fn reset_bot(nickname: String) -> (String, String) {
   if let Some(arc) = get_flow_manager() {
-    if let Some(msg) = arc.write().reset_bot(&nickname) {
+    if let Some(msg) = arc.read().reset_bot(&nickname) {
       return ("info".to_string(), msg);
     }
   }
@@ -77,7 +73,7 @@ fn reset_bot(nickname: String) -> (String, String) {
 #[tauri::command]
 fn disconnect_bot(nickname: String) -> (String, String) {
   if let Some(arc) = get_flow_manager() {
-    if let Some(msg) = arc.write().disconnect_bot(&nickname) {
+    if let Some(msg) = arc.read().disconnect_bot(&nickname) {
       return ("info".to_string(), msg);
     }
   }
@@ -89,18 +85,9 @@ fn disconnect_bot(nickname: String) -> (String, String) {
 #[tauri::command]
 fn set_group(nickname: String, group: String) {
   if let Some(arc) = get_flow_manager() {
-    let fm = arc.write();
-
-    if fm.active {
-      if let Some(swarm) = fm.swarm.clone() {
-        for bot in swarm {
-          if bot.username() == nickname {
-            PROFILES.set_str(&nickname, "group", &group);
-            break;
-          }
-        }
-      }
-    }
+    arc.read().bots.get(&nickname).map(|_| {
+      PROFILES.set_str(&nickname, "group", &group);
+    });
   }
 }
 
@@ -189,15 +176,15 @@ async fn quick_task(name: String) {
 // Функция рендеринга карты
 #[tauri::command]
 async fn render_map(nickname: String) -> Option<String> {
+  let mut base64_code = None;
+
   if let Some(arc) = get_flow_manager() {
-    for (name, bot) in arc.read().bots.iter() {
-      if *name == nickname {
-        return Some(MAP_RENDERER.render(bot));
-      }
-    } 
+    arc.read().bots.get(&nickname).map(|bot| {
+      base64_code = Some(MAP_RENDERER.render(bot));
+    });
   }
 
-  None
+  base64_code
 }
 
 // Функция сохранения карты

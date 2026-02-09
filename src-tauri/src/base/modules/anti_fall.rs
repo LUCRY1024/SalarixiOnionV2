@@ -82,7 +82,7 @@ impl AntiFallModule {
     false
   }
 
-  async fn hovering_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
+  async fn hovering_anti_fall(&self, bot: &Client, options: &AntiFallOptions) {
     loop {
       let velocity_y = if let Some(physics) = get_bot_physics(bot) {
         physics.velocity.y
@@ -113,7 +113,7 @@ impl AntiFallModule {
     }
   }
 
-  async fn teleport_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
+  async fn teleport_anti_fall(&self, bot: &Client, options: &AntiFallOptions) {
     loop {
       if let Some(physics) = get_bot_physics(bot) {
         let velocity_y = physics.velocity.y;
@@ -138,7 +138,7 @@ impl AntiFallModule {
     }
   }
 
-  async fn water_drop_anti_fall(&self, bot: &Client, options: AntiFallOptions) {
+  async fn water_drop_anti_fall(&self, bot: &Client, options: &AntiFallOptions) {
     let distance_to_ground = options.distance_to_ground.unwrap_or(4);
 
     loop {
@@ -188,7 +188,7 @@ impl AntiFallModule {
     }
   }
 
-  pub async fn enable(&self, bot: &Client, options: AntiFallOptions) {
+  pub async fn enable(&self, bot: &Client, options: &AntiFallOptions) {
     match options.mode.as_str() {
       "hovering" => { self.hovering_anti_fall(bot, options).await; },
       "teleport" => { self.teleport_anti_fall(bot, options).await; },

@@ -11,7 +11,7 @@ use tokio::time::sleep;
 
 use crate::base::{STATES, get_flow_manager};
 use crate::tools::{randfloat, randint, randuint};
-use crate::common::{get_average_coordinates_of_bots, go, go_to, get_inventory, set_bot_velocity_y, swing_arm, take_item, this_is_solid_block};
+use crate::common::{get_average_coordinates_of_bots, get_inventory, get_inventory_menu, go, go_to, set_bot_velocity_y, swing_arm, take_item, this_is_solid_block};
 
 
 pub static QUICK_TASK_MANAGER: Lazy<Arc<QuickTaskManager>> = Lazy::new(|| { Arc::new(QuickTaskManager::new()) });
@@ -44,8 +44,10 @@ impl QuickTaskManager {
                     }  
                   }
 
-                  STATES.set_mutual_states(&nickname, "walking", false);
-                  STATES.set_mutual_states(&nickname, "sprinting", false);
+                  STATES.set_state(&nickname, "can_walking", true);
+                  STATES.set_state(&nickname, "can_sprinting", true);
+                   STATES.set_state(&nickname, "can_", true);
+                    STATES.set_state(&nickname, "can_walking", true);
                 }
               });
             },
@@ -107,18 +109,18 @@ impl QuickTaskManager {
                 if STATES.get_state(&nickname, "can_looking") && STATES.get_state(&nickname, "can_interacting") {
                   let mut block_slot = None;
 
-                  for (slot, item) in bot.menu().slots().iter().enumerate() {
-                    if !item.is_empty() {
-                      if this_is_solid_block(item.kind()) {
-                        block_slot = Some(slot);
-                        break;
+                  if let Some(menu) = get_inventory_menu(&bot) {
+                    for (slot, item) in menu.slots().iter().enumerate() {
+                      if !item.is_empty() {
+                        if this_is_solid_block(item.kind()) {
+                          block_slot = Some(slot);
+                          break;
+                        }
                       }
                     }
                   }
 
                   if let Some(slot) = block_slot {
-                    STATES.set_state(&nickname, "can_walking", false);
-                    STATES.set_state(&nickname, "can_sprinting", false);
                     STATES.set_mutual_states(&nickname, "looking", true);
                     STATES.set_mutual_states(&nickname, "interacting", true);
 
@@ -143,8 +145,6 @@ impl QuickTaskManager {
                         
                     bot.set_direction(original_direction_1.0, original_direction_1.1); 
 
-                    STATES.set_state(&nickname, "can_walking", true);
-                    STATES.set_state(&nickname, "can_sprinting", true);
                     STATES.set_mutual_states(&nickname, "looking", false);
                     STATES.set_mutual_states(&nickname, "interacting", false);
                   }
@@ -173,19 +173,19 @@ impl QuickTaskManager {
                 for pos in block_positions {
                   let mut block_slot = None;
 
-                  for (slot, item) in bot.menu().slots().iter().enumerate() {
-                    if !item.is_empty() {
-                      if this_is_solid_block(item.kind()) {
-                        block_slot = Some(slot);
-                        break;
+                  if let Some(menu) = get_inventory_menu(&bot) {
+                    for (slot, item) in menu.slots().iter().enumerate() {
+                      if !item.is_empty() {
+                        if this_is_solid_block(item.kind()) {
+                          block_slot = Some(slot);
+                          break;
+                        }
                       }
                     }
                   }
 
                   if let Some(slot) = block_slot {
                     if STATES.get_state(&nickname, "can_looking") && STATES.get_state(&nickname, "can_interacting") {
-                      STATES.set_state(&nickname, "can_walking", false);
-                      STATES.set_state(&nickname, "can_sprinting", false);
                       STATES.set_mutual_states(&nickname, "looking", true);
                       STATES.set_mutual_states(&nickname, "interacting", true);
 
@@ -216,8 +216,6 @@ impl QuickTaskManager {
                         bot.set_crouching(false);
                       }
 
-                      STATES.set_state(&nickname, "can_walking", true);
-                      STATES.set_state(&nickname, "can_sprinting", true);
                       STATES.set_mutual_states(&nickname, "looking", false);
                       STATES.set_mutual_states(&nickname, "interacting", false);
                       
@@ -234,7 +232,7 @@ impl QuickTaskManager {
                 positions.push(bot.position());
               }
 
-              let average_cords = get_average_coordinates_of_bots(positions);
+              let average_cords = get_average_coordinates_of_bots(&positions);
 
               go_to(bot, average_cords.0 as i32, average_cords.2 as i32);
             },
@@ -252,11 +250,11 @@ impl QuickTaskManager {
                 positions.push(bot.position());
               }
 
-              let average_cords = get_average_coordinates_of_bots(positions);
+              let average_cords = get_average_coordinates_of_bots(&positions);
               
               let angle = 2.0 * PI * (number as f32) / (fm.bots.len() as f32);  
-              let x = average_cords.0 + 6.0 * angle.cos() as f64;  
-              let z = average_cords.2 + 6.0 * angle.sin() as f64;  
+              let x = average_cords.0 + positions.len() as f64 * 0.5 * angle.cos() as f64;  
+              let z = average_cords.2 + positions.len() as f64 * 0.5 * angle.sin() as f64;  
 
               go_to(bot, x as i32, z as i32);
             },
@@ -267,7 +265,7 @@ impl QuickTaskManager {
                 positions.push(bot.position());
               }
 
-              let average_cords = get_average_coordinates_of_bots(positions);
+              let average_cords = get_average_coordinates_of_bots(&positions);
 
               let x = average_cords.0 + 1.0 * (number as f64 * 1.0);  
               let z = average_cords.2 + 0.0 * (number as f64 * 1.0);  
