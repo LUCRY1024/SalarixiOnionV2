@@ -48,7 +48,7 @@ const pressedKeys: { [x: string]: boolean } = {
   z: false
 };
 
-export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield', 'auto-repair'];
+export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield', 'auto-repair', 'sonar-bypass'];
 
 export const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
@@ -76,6 +76,10 @@ export const plugins: { [x: string]: { enable: boolean, date: string } } = {
     date: '10.02.2026'
   },
   'auto-repair': {
+    enable: false,
+    date: '10.02.2026'
+  },
+  'sonar-bypass': {
     enable: false,
     date: '10.02.2026'
   }
@@ -164,6 +168,7 @@ async function startBots(): Promise<void> {
   const customSkinByNickname = (document.getElementById('skin-by-nickname') as HTMLInputElement).value;
 
   const captchaType = (document.getElementById('select-captcha-type') as HTMLSelectElement).value;
+  const useSonarBypass = plugins['sonar-bypass'].enable;
 
   const antiWebCaptchaOptions: {
     regex: null | string;
@@ -237,8 +242,9 @@ async function startBots(): Promise<void> {
       auto_potion: plugins['auto-potion'].enable,
       auto_look: plugins['auto-look'].enable,
       auto_shield: plugins['auto-shield'].enable,
-      auto_repair: plugins['auto-repair'].enable
-    }
+      auto_repair: plugins['auto-repair'].enable, // Buraya virgül eklendi
+      sonar_bypass: useSonarBypass
+   }
   }}) as Array<string>;
 
   log(String(result[1]), result[0]);
