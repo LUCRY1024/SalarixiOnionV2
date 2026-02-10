@@ -48,8 +48,10 @@ const pressedKeys: { [x: string]: boolean } = {
   z: false
 };
 
+// 1. DEĞİŞİKLİK BURADA: Listeye eklendi
 export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion', 'auto-look', 'auto-shield', 'auto-repair', 'sonar-bypass'];
 
+// 2. DEĞİŞİKLİK BURADA: Objeye eklendi
 export const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
     enable: false,
@@ -168,6 +170,8 @@ async function startBots(): Promise<void> {
   const customSkinByNickname = (document.getElementById('skin-by-nickname') as HTMLInputElement).value;
 
   const captchaType = (document.getElementById('select-captcha-type') as HTMLSelectElement).value;
+  
+  // 3. DEĞİŞİKLİK BURADA: Değişken tanımlandı
   const useSonarBypass = plugins['sonar-bypass'].enable;
 
   const antiWebCaptchaOptions: {
@@ -192,6 +196,7 @@ async function startBots(): Promise<void> {
 
   spawnMessage('Cистема', `Запуск ${botsCount} ботов с версией ${version} на сервер ${address}...`);
 
+  // 4. DEĞİŞİKLİK BURADA: Invoke içine eklendi
   const result = await invoke('launch_bots', { options: {
     address: address || 'localhost',
     version: version || '1.21.11',
@@ -242,8 +247,8 @@ async function startBots(): Promise<void> {
       auto_potion: plugins['auto-potion'].enable,
       auto_look: plugins['auto-look'].enable,
       auto_shield: plugins['auto-shield'].enable,
-      auto_repair: plugins['auto-repair'].enable, // Buraya virgül eklendi
-      sonar_bypass: useSonarBypass
+      auto_repair: plugins['auto-repair'].enable,
+      sonar_bypass: useSonarBypass // Eklendi
    }
   }}) as Array<string>;
 
