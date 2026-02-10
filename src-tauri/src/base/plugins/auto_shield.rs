@@ -105,7 +105,7 @@ impl AutoShieldPlugin {
             bot.look_at(get_entity_position(bot, e));
           }
 
-          sleep(Duration::from_millis(50)).await;
+          sleep(Duration::from_millis(randuint(50, 100))).await;
         }
 
         release_use_item(bot);

@@ -73,15 +73,15 @@ impl BowAimModule {
 
     if STATES.get_state(&nickname, "can_interacting") && !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_drinking") && !STATES.get_state(&nickname, "is_attacking") {
       if let Some(slot) = self.find_bow_in_inventory(bot) {
+        STATES.set_mutual_states(&nickname, "interacting", true);
+
         take_item(bot, slot).await;
 
         sleep(Duration::from_millis(50)).await;
 
-        STATES.set_mutual_states(&nickname, "interacting", true);
-
         start_use_item(bot, InteractionHand::MainHand);
 
-        sleep(Duration::from_millis(randuint(800, 1100))).await;
+        sleep(Duration::from_millis(randuint(900, 1100))).await;
 
         if let Some(entity) = get_nearest_entity(bot, filter) {
           let target_pos = get_entity_position(bot, entity);
@@ -89,7 +89,7 @@ impl BowAimModule {
 
           bot.look_at(Vec3::new(
             target_pos.x + randfloat(-0.001158, 0.001158),
-            target_pos.y + distance * 0.16,
+            target_pos.y + distance * 0.15,
             target_pos.z + randfloat(-0.001158, 0.001158)
           ));
 

@@ -1033,7 +1033,6 @@ function addOpeningUrlTo(id: string, event: string, url: string): void {
   }
 }
 
-/*
 async function checkUpdate(): Promise<void> {
   try {
     document.getElementById('close-notice-btn')?.addEventListener('click', () => {
@@ -1072,7 +1071,6 @@ async function checkUpdate(): Promise<void> {
     log(`Ошибка проверки обновлений: ${error}`, 'error');
   }
 }
-  */
 
 document.addEventListener('DOMContentLoaded', async () => {
   log('Клиент запущен', 'info');
@@ -1130,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     log('Инициализация прошла успешно', 'extended');
 
-    //await checkUpdate();
+    await checkUpdate();
   } catch (error) {
     log(`Ошибка инициализации: ${error}`, 'error');
   }

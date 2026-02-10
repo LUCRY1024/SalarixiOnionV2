@@ -202,7 +202,6 @@ body {
   border-left: 1px solid transparent;
   color: #cac7c7;
   outline: none;
-  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .panel-btn::before {
@@ -227,6 +226,10 @@ body {
   color: #fff;
 }
 
+.panel-btn.selected svg {
+  color: #fff;
+}
+
 .panel-btn.selected::before {
   background-color: var(--spec-color);
   box-shadow: 0 0 8px var(--spec-color);
@@ -241,8 +244,11 @@ body {
 }
 
 .panel-btn svg {
+  display: flex;
   width: 16px;
   height: 16px;
+  justify-content: center;
+  align-items: center;
 }
 
 .panel-btn .text {
@@ -683,7 +689,6 @@ p {
   cursor: pointer;
   color: #f8f7f7;
   outline: none;
-  transition: background 0.2s ease;
 }
 
 .control-btn.selected {

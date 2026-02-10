@@ -61,10 +61,10 @@ impl AutoPotionPlugin {
               STATES.set_state(&nickname, "can_eating", true);
             }
 
-            if STATES.get_state(&nickname, "can_drinking") && !STATES.get_state(&nickname, "is_eating") {
+            if STATES.get_state(&nickname, "can_drinking") && !STATES.get_state(&nickname, "is_eating") && !STATES.get_state(&nickname, "is_interacting") {
               let mut should_drink = true;
 
-              if STATES.get_state(&nickname, "is_attacking") || STATES.get_state(&nickname, "is_interacting") {
+              if STATES.get_state(&nickname, "is_attacking") {
                 should_drink = !randchance(health as f64 / 20.0);
               }
 

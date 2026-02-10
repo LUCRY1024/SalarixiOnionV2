@@ -62,10 +62,10 @@ impl AutoEatPlugin {
 
       if let Some(best_food) = self.get_best_food(bot, food_list.clone()) {
         if let Some(food_slot) = best_food.slot {
-          if STATES.get_state(&nickname, "can_eating") {
+          if STATES.get_state(&nickname, "can_eating") && !STATES.get_state(&nickname, "is_drinking") && !STATES.get_state(&nickname, "is_interacting") {
             let mut should_eat = true;
 
-            if STATES.get_state(&nickname, "is_attacking") || STATES.get_state(&nickname, "is_interacting") {
+            if STATES.get_state(&nickname, "is_attacking") {
               should_eat = !(randchance(satiety as f64 / 20.0) && randchance(health as f64 / 20.0));
             }
 
