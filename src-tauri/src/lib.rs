@@ -12,44 +12,42 @@ use crate::radar::*;
 use crate::emit::*;
 use crate::webhook::*;
 
-
-// Функция запуска ботов
+// Botları başlatma fonksiyonu
 #[tauri::command(async)]
 async fn launch_bots(options: LaunchOptions) -> (String, String) {
   if let Some(arc) = get_flow_manager() {
     let mut fm = arc.write();
 
     if fm.active {
-      return ("warning".to_string(), format!("Запуск невозможен, существуют активные боты"));
+      return ("warning".to_string(), format!("Zaten aktif botlar var, tekrar başlatılamaz."));
     }
 
     let _ = fm.launch(options);
 
-    return ("system".to_string(), format!("Запуск принят"));
+    return ("success".to_string(), format!("Botlar başlatıldı!"));
   }
 
-  ("error".to_string(), format!("Не удалось запустить ботов"))
+  ("error".to_string(), format!("FlowManager başlatılamadı."))
 }
 
-// Функция остановки ботов
+// Botları durdurma fonksiyonu
 #[tauri::command(async)]
 async fn stop_bots() -> (String, String) {
   if let Some(arc) = get_flow_manager() {
-    emit_message("Система", format!("Остановка {} ботов...", get_active_bots_count()));
-
+    emit_message("Sistem", format!("{} bot durduruluyor...", get_active_bots_count()));
     return arc.write().stop();
   } else {
-    return ("error".to_string(), format!("FlowManager не инициализирован"));
+    return ("error".to_string(), format!("FlowManager başlatılamadı"));
   }
 }
 
-// Функция получения профилей ботов
+// Bot profillerini al
 #[tauri::command]
 fn get_bot_profiles() -> Option<std::collections::HashMap<String, Profile>> {
   Some(PROFILES.get_all())
 }
 
-// Функция отправки сообщения от бота
+// Bot mesajı gönder
 #[tauri::command]
 fn send_message(nickname: String, message: String) {
   if let Some(arc) = get_flow_manager() {
@@ -57,7 +55,7 @@ fn send_message(nickname: String, message: String) {
   }
 }
 
-// Функция сброса всех задач и состояний бота
+// Botu resetle
 #[tauri::command]
 fn reset_bot(nickname: String) -> (String, String) {
   if let Some(arc) = get_flow_manager() {
@@ -65,11 +63,10 @@ fn reset_bot(nickname: String) -> (String, String) {
       return ("info".to_string(), msg);
     }
   }
-
-  ("error".to_string(), format!("Не удалось сбросить задачи и состояния бота {}", nickname))
+  ("error".to_string(), format!("Bot ({}) görevleri sıfırlanamadı.", nickname))
 }
 
-// Функция отключения бота
+// Bot bağlantısını kes
 #[tauri::command]
 fn disconnect_bot(nickname: String) -> (String, String) {
   if let Some(arc) = get_flow_manager() {
@@ -77,11 +74,10 @@ fn disconnect_bot(nickname: String) -> (String, String) {
       return ("info".to_string(), msg);
     }
   }
-
-  ("error".to_string(), format!("Не удалось отключить бота {}", nickname))
+  ("error".to_string(), format!("Bot ({}) bağlantısı kesilemedi.", nickname))
 }
 
-// Функция изменения группы бота
+// Grup ayarla
 #[tauri::command]
 fn set_group(nickname: String, group: String) {
   if let Some(arc) = get_flow_manager() {
@@ -91,121 +87,107 @@ fn set_group(nickname: String, group: String) {
   }
 }
 
-// Функция получения radar-данных
+// Radar verisi al
 #[tauri::command]
 fn get_radar_data(target: String) -> Option<RadarInfo> {
   RADAR_MANAGER.find_target(target)
 }
 
-// Функция сохранения radar-данных
+// Radar verisi kaydet
 #[tauri::command]
 fn save_radar_data(target: String, path: String, filename: String, x: f64, y: f64, z: f64) {
   RADAR_MANAGER.save_data(target, path, filename, x, y, z);
 }
 
-// Функция получения количества активных ботов
+// Aktif bot sayısını al
 #[tauri::command]
 fn get_active_bots_count() -> i32 {
   if let Some(arc) = get_flow_manager() {
     let fm = arc.read();
-    
     let mut count = 0;
-
     for (nickname, _) in &fm.bots {
       if let Some(profile) = PROFILES.get(&nickname) {
-        if profile.status.to_lowercase().as_str() == "онлайн" {
+        if profile.status.to_lowercase().as_str() == "online" || profile.status.to_lowercase().as_str() == "онлайн" {
           count += 1;
         }
       }
     }
-
     return count;
   }
-
   0
 }
 
-// Функция получения используемой памяти
+// Bellek kullanımı
 #[tauri::command]
 fn get_memory_usage() -> f64 {
   if let Some(usage) = memory_stats::memory_stats() {
     return usage.physical_mem as f64 / 1_000_000.0;
   }
-
   0.0
 }
 
-// Функция управления ботами
+// Bot kontrolü (Komutlar)
 #[tauri::command]
 async fn control(name: String, options: serde_json::Value, group: String) {
   if let Some(opts) = get_current_options() {
     if opts.use_webhook && opts.webhook_settings.actions {
-      send_webhook(opts.webhook_settings.url, format!("Группа ботов с названием '{}' приняла команду '{}'. Полученные опции: {}", group, name, options));
+      send_webhook(opts.webhook_settings.url, format!("'{}' grubu '{}' komutunu aldı. Seçenekler: {}", group, name, options));
     }
   }
-
   emit_event(EventType::Log(LogEventPayload { 
     name: "extended".to_string(), 
-    message: format!("Группа ботов с названием '{}' приняла команду '{}'. Полученные опции: {}", group, name, options)
+    message: format!("'{}' grubu '{}' komutunu aldı. Seçenekler: {}", group, name, options)
   }));
-
-  emit_message("Управление", format!("Группа ботов с названием '{}' приняла команду '{}'", group, name));
-
+  emit_message("Kontrol", format!("'{}' grubu '{}' komutunu başarıyla aldı.", group, name));
   MODULE_MANAGER.control(name, options, group).await;
 }
 
-// Функция выполнения быстрых задач
+// Hızlı görevler
 #[tauri::command]
 async fn quick_task(name: String) {
   if let Some(opts) = get_current_options() {
     if opts.use_webhook && opts.webhook_settings.actions {
-      send_webhook(opts.webhook_settings.url, format!("Быстрая задача '{}'", name));
+      send_webhook(opts.webhook_settings.url, format!("Hızlı görev çalıştırıldı: '{}'", name));
     }
   }
-
   emit_event(EventType::Log(LogEventPayload { 
     name: "extended".to_string(), 
-    message: format!("Быстрая задача '{}'", name)
+    message: format!("Hızlı görev çalıştırıldı: '{}'", name)
   }));
-
-  emit_message("Быстрая задача", format!("{} ботов получили быструю задачу '{}'", get_active_bots_count(), name));
-
+  emit_message("Hızlı Görev", format!("{} bot '{}' görevini aldı.", get_active_bots_count(), name));
   QUICK_TASK_MANAGER.execute(name);
 }
 
-// Функция рендеринга карты
+// Harita render
 #[tauri::command]
 async fn render_map(nickname: String) -> Option<String> {
   let mut base64_code = None;
-
   if let Some(arc) = get_flow_manager() {
     arc.read().bots.get(&nickname).map(|bot| {
       base64_code = Some(MAP_RENDERER.render(bot));
     });
   }
-
   base64_code
 }
 
-// Функция сохранения карты
+// Harita kaydet
 #[tauri::command]
 async fn save_map(nickname: String, path: Option<String>, base64code: String) {
   MAP_RENDERER.save_map(nickname, path, base64code);
 }
 
-// Функция открытия URL в браузере
+// URL Aç
 #[tauri::command]
 fn open_url(url: String) {
   let _ = open::that(url);
 }
 
-// Функция остановки главного процесса
+// Çıkış
 #[tauri::command]
 fn exit() {
   std::process::exit(0x0);
 }
 
-// Функция запуска
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -221,5 +203,5 @@ pub fn run() {
       control, quick_task, render_map, save_map, open_url
     ])
     .run(tauri::generate_context!())
-    .expect("Не удалось запустить клиент");
+    .expect("İstemci başlatılamadı.");
 }
