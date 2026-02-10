@@ -53,31 +53,31 @@ export const pluginList = ['auto-armor', 'auto-totem', 'auto-eat', 'auto-potion'
 export const plugins: { [x: string]: { enable: boolean, date: string } } = {
   'auto-armor': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-totem': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-eat': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-potion': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-look': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-shield': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   },
   'auto-repair': {
     enable: false,
-    date: '01.02.2026'
+    date: '10.02.2026'
   }
 };
 
